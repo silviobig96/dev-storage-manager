@@ -80,7 +80,7 @@ npm run tauri build -- --debug
 git diff --check
 ```
 
-The final command builds an unsigned, unnotarized local debug application bundle. It does not perform a release or distribution step.
+`npm run tauri build -- --debug` builds an unsigned, unnotarized local debug application bundle. It does not perform a release or distribution step.
 
 ## Reporting problems
 
