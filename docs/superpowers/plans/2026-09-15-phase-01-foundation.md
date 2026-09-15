@@ -325,7 +325,10 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'src-tauri/icons', 'target'] },
   {
     files: ['src/**/*.{ts,tsx}'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+    ],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
@@ -911,7 +914,11 @@ Configure `src/test/setup.ts` to import `@testing-library/jest-dom/vitest`. In `
 ```tsx
 it('describes the product as foundation-stage developer storage intelligence', async () => {
   render(<App />);
-  expect(screen.getByRole('heading', { name: /understand what your development environment/i })).toBeVisible();
+  expect(
+    screen.getByRole('heading', {
+      name: /understand what your development environment/i,
+    }),
+  ).toBeVisible();
   expect(await screen.findByText(/foundation connected/i)).toBeVisible();
   expect(screen.getByText(/no automatic deletion/i)).toBeVisible();
 });

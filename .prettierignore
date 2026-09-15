@@ -1,5 +1,6 @@
 dist
 node_modules
+.superpowers/
 src-tauri/icons
 target
 Cargo.lock
