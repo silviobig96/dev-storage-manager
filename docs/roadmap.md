@@ -8,7 +8,7 @@ Define the product, architecture, safety model, provider contract, contribution 
 
 ## Phase 01 — Application Foundation
 
-Create the Tauri 2, React, TypeScript, Vite, and Rust application shell; establish core/application/platform boundaries; add a SQLite migration and repository foundation; add a read-only health contract; configure tests, linting, formatting, and GitHub Actions CI. No scanning, providers, cleanup, monitor, Windows implementation, privileged helpers, or Full Disk Access flow.
+**Complete.** The Tauri 2, React, TypeScript, Vite, and Rust application shell, core/application/platform/persistence boundaries, SQLite migration and repository foundation, read-only health contract, tests, linting, formatting, local debug build, and macOS GitHub Actions CI are in place. This phase implements no scanning, providers, workspace behavior, cleanup, monitor, notifications, Windows support, privileged helpers, or Full Disk Access flow.
 
 ## Phase 02 — Workspace System
 
