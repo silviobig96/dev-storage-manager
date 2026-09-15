@@ -12,7 +12,23 @@ Read these documents in order:
 4. [docs/provider-contract.md](docs/provider-contract.md)
 5. [AGENTS.md](AGENTS.md)
 
-Phase 00 contains documentation only. Do not add application scaffolding or dependencies as part of a Phase 00 change.
+Phase 01 implements only the macOS application-foundation shell and read-only health check. Do not describe or implement later-phase workspace selection, providers, scanning, cleanup, monitoring, notifications, privileged helpers, Full Disk Access behavior, or Windows support as part of a Phase 01 change.
+
+## Prerequisites and setup
+
+Development currently targets macOS. Install:
+
+- the Xcode Command Line Tools;
+- [nvm](https://github.com/nvm-sh/nvm); and
+- the stable Rust toolchain with the `rustfmt` and `clippy` components.
+
+From the repository root, select the pinned Node.js version, install locked dependencies, and launch the Tauri development application:
+
+```bash
+nvm use
+npm ci
+npm run tauri dev
+```
 
 ## Non-negotiable rules
 
@@ -41,6 +57,30 @@ Phase 00 contains documentation only. Do not add application scaffolding or depe
 Use concise, scoped commits. Explain the user-facing or architectural reason for the change in the pull request, including safety implications. Changes to cleanup planning, execution, path validation, classification, platform adapters, persistence, or permissions require focused security review.
 
 Documentation should describe current behavior accurately. Do not claim planned features already exist, and avoid vague cleanup labels such as "junk."
+
+## Verification
+
+Run focused tests first. Before submitting a Phase 01 foundation change, run the complete local verification sequence from the repository root:
+
+```bash
+npm run test:run -- src/lib/desktop.test.ts src/App.test.tsx
+cargo test -p dev-storage-core
+cargo test -p dev-storage-platform
+cargo test -p dev-storage-persistence
+cargo test -p dev-storage-application
+cargo test -p dev-storage-manager
+npm run format:check
+npm run lint
+npm run test:run
+npm run build
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+npm run tauri build -- --debug
+git diff --check
+```
+
+`npm run tauri build -- --debug` builds an unsigned, unnotarized local debug application bundle. It does not perform a release or distribution step.
 
 ## Reporting problems
 

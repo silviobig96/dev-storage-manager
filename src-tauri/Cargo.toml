@@ -1,0 +1,20 @@
+[package]
+name = "dev-storage-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "dev_storage_manager_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dev-storage-application = { path = "../crates/application" }
+dev-storage-core = { path = "../crates/core" }
+dev-storage-persistence = { path = "../crates/persistence" }
+dev-storage-platform = { path = "../crates/platform" }
+serde.workspace = true
+tauri = { version = "2", features = [] }

@@ -1,0 +1,8 @@
+dist
+node_modules
+.superpowers/
+src-tauri/gen/
+src-tauri/icons
+target
+Cargo.lock
+package-lock.json

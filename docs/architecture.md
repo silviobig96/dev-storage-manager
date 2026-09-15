@@ -2,9 +2,11 @@
 
 ## Goals
 
-The architecture places classification and destructive-operation safety in a shared Rust boundary, keeps the interface replaceable, isolates operating-system behavior, and allows read-only scanning and local history to evolve independently. Phase 00 defines these boundaries; it does not implement them.
+The architecture places classification and destructive-operation safety in a shared Rust boundary, keeps the interface replaceable, isolates operating-system behavior, and allows read-only scanning and local history to evolve independently. Phase 00 defined the target boundaries. Phase 01 implements only the application shell, layer skeleton, persistence foundation, and read-only health path described below; the remaining product architecture is planned.
 
 ## System context
+
+The following diagram is the planned product architecture. Phase 01 implements only the React-to-Tauri health path and the Rust application, platform, and persistence foundations; it does not implement the scanner, providers, project analyzer, safety policy, history features, or cleanup planning.
 
 ```text
 React + TypeScript UI
@@ -136,4 +138,6 @@ Quick scans use bounded concurrency and known roots, avoid following unsafe syml
 
 ## Phase 01 boundary
 
-Phase 01 creates the shell, frontend/backend/core/platform module skeleton, a SQLite connection and migration foundation, one read-only health contract, tests, formatting, linting, and CI. It contains no provider, filesystem scan, cleanup, background monitor, notification, Windows implementation, privileged helper, or Full Disk Access flow.
+Phase 01 implements a Tauri 2 shell and React/TypeScript foundation screen, Rust core/application/platform/persistence boundaries, a SQLite connection and migration foundation, and one read-only `get_app_health` contract that crosses those layers. Tests, formatting, linting, production frontend builds, local debug application builds, and macOS CI verify this foundation.
+
+The command registry contains only `get_app_health`. Phase 01 contains no provider, workspace behavior, filesystem scan, cleanup planning or execution, background monitor, notification, Windows implementation, privileged helper, or Full Disk Access flow. These exclusions are architectural boundaries, not merely absent UI controls.

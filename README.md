@@ -4,7 +4,7 @@
 
 `dev-storage-manager` is a free and open-source desktop application for developer storage intelligence. It is intended to explain which tools and projects consume space, how that usage changes, and what may be reclaimable without presenting developer data as anonymous "junk."
 
-The project is currently **pre-alpha and in its product-foundation stage**. No application or cleanup functionality has been implemented yet.
+The project is currently **pre-alpha**. Phase 01 provides only a buildable application-foundation shell and a read-only health check. Storage scanning, providers, workspace management, cleanup, monitoring, and notifications are not implemented.
 
 ## Product commitments
 
@@ -27,15 +27,29 @@ The intended boundaries are described in [docs/architecture.md](docs/architectur
 
 ## Current scope
 
-Phase 00 establishes documentation only:
+Phase 00 established the product and safety documentation. Phase 01 adds only:
 
-- product requirements and non-negotiable invariants;
-- system boundaries and data flow;
-- safety policy and provider contract;
-- phased delivery order; and
-- a detailed, unexecuted Phase 01 application-foundation plan.
+- a Tauri 2 shell with a React and TypeScript foundation screen;
+- Rust core, application, platform, persistence, and Tauri boundaries;
+- a SQLite connection and migration foundation;
+- one read-only `get_app_health` IPC command; and
+- tests, formatting, linting, builds, and macOS CI for that foundation.
+
+No Phase 02 or later product functionality is present. In particular, the application does not select workspaces, scan storage, load providers, plan or execute cleanup, run a background monitor, or send notifications.
 
 See [docs/roadmap.md](docs/roadmap.md) for the release sequence. In particular, destructive cleanup does not begin until the read-only scanner, safety model, and dashboard are stable and tested.
+
+## Local development
+
+Development currently targets macOS. Install the Xcode Command Line Tools, [nvm](https://github.com/nvm-sh/nvm), and the stable Rust toolchain with `rustfmt` and `clippy`. From the repository root, install the pinned Node.js version and locked dependencies, then launch the Tauri development application:
+
+```bash
+nvm use
+npm ci
+npm run tauri dev
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete local verification sequence.
 
 ## Contributing and security
 
