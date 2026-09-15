@@ -39,3 +39,24 @@ These rules apply to every contributor and automated agent working in this repos
 ## Phase ordering
 
 Do not implement destructive cleanup until the read-only scanner, safety model, and dashboard are stable and tested. Phase 01 is application foundation only: no providers, full-disk scanning, cleanup, monitor daemon, privileged helpers, Full Disk Access flow, or Windows implementation.
+
+DESIGN QUALITY
+
+This is a polished consumer/professional macOS application, not an
+administrative web dashboard.
+
+For macOS:
+
+- Follow current Apple Human Interface Guidelines.
+- Prefer native macOS interaction and information patterns.
+- Prefer sidebar/split-view/list/table patterns over card grids.
+- Use system typography and semantic colors.
+- Support light and dark appearances equally.
+- Keep decoration subordinate to content.
+- Avoid generic AI-generated dashboard aesthetics.
+- Avoid excessive cards, pills, gradients, shadows and oversized copy.
+- Use transparency/material effects deliberately, not decoratively.
+- Controls should feel compact and appropriate for a desktop utility.
+- Every screen must be visually reviewed before a phase is considered complete.
+
+Future Windows UI must adapt to Windows conventions rather than mimic macOS.
