@@ -1,0 +1,11 @@
+[package]
+name = "dev-storage-application"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dev-storage-core = { path = "../core" }
+dev-storage-persistence = { path = "../persistence" }
+dev-storage-platform = { path = "../platform" }
+thiserror.workspace = true
