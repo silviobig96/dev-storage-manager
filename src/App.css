@@ -1,0 +1,165 @@
+.app-shell {
+  min-height: 100vh;
+  padding: clamp(2rem, 7vw, 5.5rem) clamp(1.5rem, 6vw, 5rem);
+}
+
+.page-frame {
+  width: min(100%, 68rem);
+  margin: 0 auto;
+}
+
+.hero {
+  max-width: 55rem;
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 1rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 17ch;
+  margin: 0;
+  font-size: clamp(2.6rem, 6.4vw, 5.6rem);
+  font-weight: 640;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.hero-copy {
+  max-width: 41rem;
+  margin: 1.75rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+  line-height: 1.65;
+}
+
+.core-status {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.65fr) minmax(18rem, 1.35fr);
+  gap: 1.5rem;
+  align-items: center;
+  margin-top: clamp(2.75rem, 6vw, 5rem);
+  padding: 1.5rem;
+  border: 0.0625rem solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 1.25rem 4rem rgba(22, 39, 31, 0.07);
+  backdrop-filter: blur(1rem);
+}
+
+.status-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.status-heading h2,
+.status-message p {
+  margin: 0;
+}
+
+.status-heading h2 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-mark {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: none;
+  border: 0.125rem solid var(--accent);
+  border-radius: 50%;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 0.25rem var(--accent-soft);
+}
+
+.status-message {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.commitments {
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+}
+
+.commitment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 0.0625rem solid var(--line);
+  list-style: none;
+}
+
+.commitment-grid li {
+  min-width: 0;
+  padding: 1.5rem 1.5rem 0 0;
+}
+
+.commitment-grid li + li {
+  padding-left: 1.5rem;
+  border-left: 0.0625rem solid var(--line);
+}
+
+.commitment-index {
+  display: block;
+  margin-bottom: 2rem;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.commitment-grid h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.commitment-grid p {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 47.5rem) {
+  .hero h1 {
+    font-size: clamp(2.35rem, 10vw, 4rem);
+  }
+
+  .core-status {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .commitment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commitment-grid li {
+    padding: 1.5rem 0;
+  }
+
+  .commitment-grid li + li {
+    padding-left: 0;
+    border-top: 0.0625rem solid var(--line);
+    border-left: 0;
+  }
+
+  .commitment-index {
+    margin-bottom: 0.75rem;
+  }
+}

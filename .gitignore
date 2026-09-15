@@ -2,6 +2,7 @@
 node_modules/
 dist/
 target/
+*.tsbuildinfo
 .DS_Store
 *.db
 *.db-shm
