@@ -252,7 +252,7 @@ git commit -m "feat: add accessible interface primitives"
 - Create: `src/components/shell/Toolbar.css`
 - Create: `src/components/shell/shell.test.tsx`
 
-- [ ] **Step 1: Write the shell contract tests**
+- [x] **Step 1: Write the shell contract tests**
 
 Add tests that render the shell and require:
 
@@ -272,7 +272,7 @@ npm run test:run -- src/components/shell/shell.test.tsx
 
 Expected: FAIL because the shell components do not exist.
 
-- [ ] **Step 2: Implement `SidebarItem` semantics**
+- [x] **Step 2: Implement `SidebarItem` semantics**
 
 `SidebarItem` supports two deliberate states:
 
@@ -284,14 +284,14 @@ Expected: FAIL because the shell components do not exist.
 Do not create placeholder click handlers, empty anchors, fake route state, or
 disabled buttons for later phases.
 
-- [ ] **Step 3: Implement `Sidebar`**
+- [x] **Step 3: Implement `Sidebar`**
 
 Render the locked information architecture in order. Keep Overview selected,
 group Settings separately, and use the local line icons. Apply compact macOS
 row spacing and a persistent selection surface using text, shape, and icon
 treatment rather than color alone.
 
-- [ ] **Step 4: Implement `Toolbar` and `AppShell`**
+- [x] **Step 4: Implement `Toolbar` and `AppShell`**
 
 `AppShell` owns the two-pane landmark structure and the scrollable primary
 content region. `Toolbar` displays the current view title. Do not render a
@@ -301,7 +301,7 @@ minimum width.
 Use a semantic separator between panes. Avoid card wrappers, broad shadows, or
 custom titlebar positioning.
 
-- [ ] **Step 5: Make the shell tests pass**
+- [x] **Step 5: Make the shell tests pass**
 
 Run:
 
@@ -311,7 +311,7 @@ npm run test:run -- src/components/shell/shell.test.tsx
 
 Expected: PASS.
 
-- [ ] **Step 6: Verify and commit the shell**
+- [x] **Step 6: Verify and commit the shell**
 
 Run:
 
@@ -783,3 +783,7 @@ Phase 02 must not begin as part of this plan.
 - Task 2: complete. Missing-module RED, then 9/9 focused tests pass, including
   keyboard activation, disabled behavior, form safety, and status text. Lint and
   production build pass. Local SVGs only; dependencies unchanged.
+- Task 3: complete. Missing-module RED, then 2/2 shell tests pass. Navigation
+  landmark/current state/reading order verified. Lint and build pass. A working
+  skip link and focusable content region provide keyboard access without dead
+  navigation controls.

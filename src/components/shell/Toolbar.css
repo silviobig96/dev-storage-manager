@@ -1,0 +1,17 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: var(--space-5) var(--space-8);
+  border-bottom: 1px solid var(--separator);
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+@media (max-width: 899px) {
+  .toolbar {
+    padding-inline: var(--space-6);
+  }
+}
