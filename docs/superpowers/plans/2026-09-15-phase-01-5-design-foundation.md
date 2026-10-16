@@ -445,7 +445,7 @@ git commit -m "feat: add truthful overview foundation view"
 - Modify: `src/App.test.tsx`
 - Delete: `src/App.css`
 
-- [ ] **Step 1: Rewrite the app-level tests first**
+- [x] **Step 1: Rewrite the app-level tests first**
 
 Update `src/App.test.tsx` to require the integrated shell while retaining all
 three existing health outcomes:
@@ -473,7 +473,7 @@ npm run test:run -- src/App.test.tsx
 
 Expected: FAIL because `App` still renders the Phase 01 page.
 
-- [ ] **Step 2: Integrate `AppShell` and `OverviewView`**
+- [x] **Step 2: Integrate `AppShell` and `OverviewView`**
 
 Keep the current `HealthState` union and cancellation guard in `App.tsx`.
 Replace the old presentation with:
@@ -487,14 +487,14 @@ Replace the old presentation with:
 Do not change `src/lib/desktop.ts`, the Tauri command, Rust crates, or the
 database schema.
 
-- [ ] **Step 3: Remove obsolete page styling**
+- [x] **Step 3: Remove obsolete page styling**
 
 Delete `src/App.css` after every needed style has moved to the focused shell,
 content, view, or global style file. Remove its import from `App.tsx`. Confirm
 that no gradient, hero, commitment-grid, oversized headline, or old literal
 palette declaration remains in frontend source.
 
-- [ ] **Step 4: Make app integration tests pass**
+- [x] **Step 4: Make app integration tests pass**
 
 Run:
 
@@ -504,7 +504,7 @@ npm run test:run -- src/App.test.tsx src/lib/desktop.test.ts
 
 Expected: PASS. The existing desktop bridge contract remains unchanged.
 
-- [ ] **Step 5: Run the frontend checkpoint**
+- [x] **Step 5: Run the frontend checkpoint**
 
 Run:
 
@@ -517,7 +517,7 @@ npm run build
 
 Expected: every command exits zero.
 
-- [ ] **Step 6: Commit the integrated redesign**
+- [x] **Step 6: Commit the integrated redesign**
 
 ```bash
 git add src/App.tsx src/App.test.tsx src/App.css
@@ -791,3 +791,7 @@ Phase 02 must not begin as part of this plan.
   focused tests and build pass. The existing health union is exported as a
   type from App without changing runtime behavior. Foundation uses an inline
   status footer rather than a prominent section, as refined by the task.
+- Task 5: complete. Integration RED: 3 expected shell failures; GREEN: 8/8
+  App/bridge tests. Full frontend suite 26/26, lint, format, and build pass.
+  StrictMode stale resolve/reject tests protect the existing cancellation guard.
+  Removed the obsolete App.css; health contract and backend remain unchanged.
