@@ -26,7 +26,9 @@ package are added.
 
 - Work on `codex/phase-01-5-design-foundation` in the ordinary repository
   checkout. Do not create or use a worktree.
-- Preserve the existing remote and do not push.
+- Preserve the existing remote. This implementation task authorizes pushing only
+  `codex/phase-01-5-design-foundation` after functional gates and scope review.
+  Human visual QA may remain pending. Do not create a PR, merge, or release.
 - Keep `get_app_health` as the only Tauri command and the only runtime data
   request.
 - Do not modify Rust application behavior, SQLite schema, Tauri capabilities,
@@ -57,7 +59,7 @@ package are added.
 - Modify: `src/main.tsx`
 - Modify: `src/index.css`
 
-- [ ] **Step 1: Record the existing baseline**
+- [x] **Step 1: Record the existing baseline**
 
 Run:
 
@@ -68,57 +70,23 @@ npm run build
 
 Expected: both commands exit zero before the style foundation changes.
 
-- [ ] **Step 2: Create the semantic token layer**
+- [x] **Step 2: Create the semantic token layer**
 
 Create `src/styles/tokens.css` with the exact token families defined in
 `docs/design-system.md`:
 
-```css
-:root {
-  color-scheme: light dark;
-
-  --surface-primary: ...;
-  --surface-secondary: ...;
-  --surface-elevated: ...;
-  --surface-hover: ...;
-
-  --text-primary: ...;
-  --text-secondary: ...;
-  --text-tertiary: ...;
-
-  --separator: ...;
-  --selection: ...;
-  --selection-text: ...;
-  --accent: ...;
-  --focus-ring: ...;
-
-  --status-safe: ...;
-  --status-review: ...;
-  --status-protected: ...;
-  --status-error: ...;
-
-  --space-1: 2px;
-  --space-2: 4px;
-  --space-3: 6px;
-  --space-4: 8px;
-  --space-5: 12px;
-  --space-6: 16px;
-  --space-7: 20px;
-  --space-8: 24px;
-  --space-9: 32px;
-
-  --radius-control: 5px;
-  --radius-surface: 8px;
-  --shadow-elevated: ...;
-}
-```
+Use the concrete light/dark palette in the implementation values table in
+`docs/design-system.md`. Keep `color-scheme: light dark`, the documented
+`2–32px` spacing scale, `5px` control radius, and `8px` surface radius. The
+production source of truth is `src/styles/tokens.css`; do not duplicate the
+whole stylesheet here.
 
 Define separately tuned dark values under
 `@media (prefers-color-scheme: dark)` and increased-contrast overrides under
 `@media (prefers-contrast: more)`. Literal palette values remain in this file
 only.
 
-- [ ] **Step 3: Create global desktop defaults**
+- [x] **Step 3: Create global desktop defaults**
 
 Create `src/styles/base.css` with:
 
@@ -133,13 +101,13 @@ Create `src/styles/base.css` with:
 
 Do not add gradients, decorative backgrounds, or a mobile page layout.
 
-- [ ] **Step 4: Wire styles through the entry point**
+- [x] **Step 4: Wire styles through the entry point**
 
 Update `src/main.tsx` to import `styles/tokens.css` and `styles/base.css` before
 rendering. Reduce `src/index.css` to a compatibility import or remove its old
 palette and gradient declarations, leaving no duplicated token source.
 
-- [ ] **Step 5: Verify compilation and formatting**
+- [x] **Step 5: Verify compilation and formatting**
 
 Run:
 
@@ -151,7 +119,7 @@ npm run format:check
 Expected: both commands exit zero. Visual values are not considered accepted
 until Task 7 human review.
 
-- [ ] **Step 6: Commit the token foundation**
+- [x] **Step 6: Commit the token foundation**
 
 ```bash
 git add src/main.tsx src/index.css src/styles/tokens.css src/styles/base.css
@@ -482,12 +450,11 @@ git commit -m "feat: add truthful overview foundation view"
 Update `src/App.test.tsx` to require the integrated shell while retaining all
 three existing health outcomes:
 
-```tsx
-it('renders the shell while health is loading', ...);
-it('reports the connected schema version in Overview', ...);
-it('keeps the shell usable when the desktop core is unavailable', ...);
-it('ignores a health result after unmount', ...);
-```
+Write real callbacks for loading, connected schema version, unavailable core,
+and late resolution after unmount. Use controlled promises and React `act` to
+settle asynchronous updates. Assert visible shell/status output and verify that
+an old request cannot replace a newly mounted instance's state. Include late
+rejection coverage as well as resolution.
 
 Also assert:
 
@@ -656,11 +623,6 @@ From the repository root, run:
 
 ```bash
 npm run test:run -- src/lib/desktop.test.ts src/App.test.tsx src/components/ui/ui.test.tsx src/components/shell/shell.test.tsx src/components/content/content.test.tsx src/views/OverviewView.test.tsx
-cargo test -p dev-storage-core
-cargo test -p dev-storage-platform
-cargo test -p dev-storage-persistence
-cargo test -p dev-storage-application
-cargo test -p dev-storage-manager
 npm run format:check
 npm run lint
 npm run test:run
@@ -736,7 +698,7 @@ git diff --check
 Commit any correction with a scoped message describing the actual defect. Do
 not combine unrelated visual experiments.
 
-- [ ] **Step 5: Confirm repository state without pushing**
+- [ ] **Step 5: Confirm repository state and push the authorized feature branch**
 
 Run:
 
@@ -744,14 +706,22 @@ Run:
 git status --short
 git log --oneline --decorate main..HEAD
 git remote -v
+git branch --show-current
+git push -u origin codex/phase-01-5-design-foundation
+git rev-parse HEAD
+git ls-remote --heads origin codex/phase-01-5-design-foundation
 ```
 
-Expected: the worktree is clean, scoped local commits are visible, and the
-pre-existing remote is unchanged. Do not push.
+Expected: the checkout is clean, the branch is exactly
+`codex/phase-01-5-design-foundation`, the pre-existing remote is unchanged, and
+the remote branch hash equals local HEAD. Push only after functional gates and
+scope review pass. Do not force a rejected push, open a PR, merge, or release.
+The push is authorized even while human visual QA remains pending.
 
 - [ ] **Step 6: Report the two QA gates separately**
 
-If every automated gate and agent preflight passes, report:
+When automated gates pass, report the functional result separately from native
+and browser inspection. List uninspected visual conditions explicitly:
 
 ```text
 FUNCTIONAL QA: PASS
@@ -787,6 +757,26 @@ Phase 01.5 is complete only when all of the following are true:
 - `FUNCTIONAL QA: PASS` is recorded.
 - The human has inspected the running application and explicitly recorded
   `VISUAL QA: PASS`.
-- The feature branch remains local until the human chooses to push or merge it.
+- The authorized feature branch is pushed and its remote HEAD matches local
+  HEAD. This does not imply visual acceptance or permission to merge.
 
 Phase 02 must not begin as part of this plan.
+
+## Execution record — 2026-10-16
+
+- Preflight: normal checkout, expected branch and remote, clean tree, design
+  commit contained in HEAD. Baseline: 3 frontend tests and production build pass.
+- Ruling: execute inline in the existing checkout; no worktree. Track progress
+  here rather than creating additional execution infrastructure.
+- Interface review: Tasks 1–6 share semantic tokens; Tasks 3–5 share shell and
+  Overview composition; Tasks 4–5 share the unchanged health union. No conflict.
+- Ruling: the Task 2 control primitives remain tested building blocks; no
+  inactive control is inserted into Overview merely to demonstrate them.
+- Ruling: Foundation status follows Storage overview and Safety posture so
+  technical health/schema remains secondary, per the current task refinement.
+- Ruling: consolidate final Rust checks to the workspace commands. Individual
+  crate tests would repeat the same regression coverage without a new concern.
+- Ruling: explicitly authorized feature-branch push supersedes the documentation
+  run's local-only restriction. Human visual acceptance remains independent.
+- Task 1: complete. Baseline tests 3/3; production build and format check pass.
+  Concrete neutral palettes documented alongside semantic token implementation.

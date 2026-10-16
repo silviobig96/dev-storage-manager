@@ -1,10 +1,10 @@
 # dev-storage-manager Design System
 
-**Status:** Proposed design foundation for Phase 01.5 human review
+**Status:** Direction approved; implementation awaits human visual QA
 
 **Platform:** macOS first; Windows adaptation planned
 
-**Last reviewed:** 2026-09-15
+**Last reviewed:** 2026-10-16
 
 This document is the durable visual and interaction contract for
 `dev-storage-manager`. It translates the product's safety and local-first
@@ -199,6 +199,36 @@ strengthen separators, selection, and focus without changing meaning. Status
 colors are never reused as generic decoration.
 
 ### Appearance behavior
+
+### Implementation palette
+
+Minor visual values concretized for Phase 01.5 (2026-10-16). These neutral
+surfaces and blue selection/accent values are webview equivalents, not a claim
+to inherit AppKit's dynamic accent color. Only the token stylesheet contains
+production palette literals.
+
+| Role              | Light     | Dark      |
+| ----------------- | --------- | --------- |
+| Primary surface   | `#ffffff` | `#202123` |
+| Secondary surface | `#f3f3f5` | `#28292c` |
+| Elevated surface  | `#ffffff` | `#323337` |
+| Hover surface     | `#e9eaed` | `#37393e` |
+| Primary text      | `#24262b` | `#f0f1f3` |
+| Secondary text    | `#60636c` | `#b7bac3` |
+| Tertiary text     | `#6b6f79` | `#a4a8b2` |
+| Separator         | `#dcdde1` | `#45474d` |
+| Selection         | `#dce8fa` | `#334865` |
+| Selection text    | `#153d72` | `#e1edff` |
+| Accent/focus      | `#215ca8` | `#9cc5ff` |
+| Safe              | `#287044` | `#8ccea5` |
+| Review            | `#875600` | `#e4be76` |
+| Protected         | `#535e78` | `#b5c1dc` |
+| Error             | `#b53232` | `#f1a0a0` |
+
+Overlay shadow: `0 4px 16px rgb(0 0 0 / 12%)` in light appearance and
+`0 4px 16px rgb(0 0 0 / 28%)` in dark appearance. No foundation surface needs
+that shadow. Increased contrast uses stronger neutral separators (`#81858e`
+light, `#9da2ad` dark), primary secondary-text roles, and a `3px` focus ring.
 
 The default is the operating system appearance through `color-scheme: light
 dark` and `prefers-color-scheme`. Phase 01.5 does not add a persisted appearance
