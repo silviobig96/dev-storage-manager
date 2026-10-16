@@ -54,9 +54,20 @@ function deferred<T>() {
   });
   return { promise, resolve, reject };
 }
-function Harness({ scan }: { scan?: WorkspaceScanController }) {
+function Harness({
+  scan,
+  busyIds,
+}: {
+  scan?: WorkspaceScanController;
+  busyIds?: Set<string>;
+}) {
   const workspaces = useWorkspaces();
-  return <WorkspacesView workspaces={workspaces} scan={scan} />;
+  return (
+    <WorkspacesView
+      workspaces={busyIds ? { ...workspaces, busyIds } : workspaces}
+      scan={scan}
+    />
+  );
 }
 const action = (verb: string, row = first) =>
   `${verb} ${row.displayName} — ${row.selectedPath}`;
@@ -95,36 +106,77 @@ afterEach(() => {
 });
 
 describe('Workspaces view', () => {
-  it('keeps Remove dialog focus and safety copy while a late scan status freezes confirmation', async () => {
-    const scan = scanController();
-    const { rerender } = render(<Harness scan={scan} />);
-    await userEvent.click(
-      await screen.findByRole('button', { name: action('Remove workspace') }),
-    );
-    const dialog = screen.getByRole('dialog', { name: 'Remove workspace?' });
-    const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
-    expect(cancel).toHaveFocus();
-    expect(
-      within(dialog).getByText('This only removes the workspace from the app.'),
-    ).toBeVisible();
-    expect(
-      within(dialog).getByText('Files on disk will not be deleted.'),
-    ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Quick scan' })).toBeDisabled();
-    rerender(
-      <Harness
-        scan={{
-          ...scan,
-          snapshot: scanSnapshot({ state: 'running', workerActive: true }),
-        }}
-      />,
-    );
-    expect(cancel).toHaveFocus();
-    expect(
-      within(dialog).getByRole('button', { name: 'Remove workspace' }),
-    ).toBeDisabled();
-    expect(api.removeWorkspace).not.toHaveBeenCalled();
-  });
+  it.each(['Cancel', 'Escape'] as const)(
+    'restores usable row focus after %s closes a dialog frozen by late scan status',
+    async (dismissal) => {
+      const scan = scanController();
+      const { rerender } = render(<Harness scan={scan} />);
+      await userEvent.click(
+        await screen.findByRole('button', { name: action('Remove workspace') }),
+      );
+      const dialog = screen.getByRole('dialog', { name: 'Remove workspace?' });
+      const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
+      expect(cancel).toHaveFocus();
+      expect(
+        within(dialog).getByText(
+          'This only removes the workspace from the app.',
+        ),
+      ).toBeVisible();
+      expect(
+        within(dialog).getByText('Files on disk will not be deleted.'),
+      ).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Quick scan' })).toBeDisabled();
+      rerender(
+        <Harness
+          scan={{
+            ...scan,
+            snapshot: scanSnapshot({ state: 'running', workerActive: true }),
+          }}
+        />,
+      );
+      expect(cancel).toHaveFocus();
+      expect(
+        within(dialog).getByRole('button', { name: 'Remove workspace' }),
+      ).toBeDisabled();
+      expect(api.removeWorkspace).not.toHaveBeenCalled();
+      if (dismissal === 'Cancel') await userEvent.click(cancel);
+      else fireEvent(dialog, new Event('cancel', { cancelable: true }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: action('Check availability for') }),
+      ).toHaveFocus();
+    },
+  );
+  it.each([
+    { busyIds: new Set(['1']), focus: 'neighbor' },
+    { busyIds: new Set(['1', '2']), focus: 'heading' },
+  ])(
+    'falls back to $focus when scan freezing leaves the original row without usable controls',
+    async ({ busyIds, focus }) => {
+      const scan = scanController();
+      const { rerender } = render(<Harness scan={scan} />);
+      await userEvent.click(
+        await screen.findByRole('button', { name: action('Remove workspace') }),
+      );
+      const dialog = screen.getByRole('dialog', { name: 'Remove workspace?' });
+      rerender(
+        <Harness scan={{ ...scan, status: 'unavailable' }} busyIds={busyIds} />,
+      );
+      fireEvent(dialog, new Event('cancel', { cancelable: true }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      if (focus === 'neighbor')
+        expect(
+          screen.getByRole('button', {
+            name: action('Check availability for', second),
+          }),
+        ).toHaveFocus();
+      else
+        expect(
+          screen.getByRole('heading', { level: 1, name: 'Workspaces' }),
+        ).toHaveFocus();
+      expect(api.removeWorkspace).not.toHaveBeenCalled();
+    },
+  );
   it.each(['ready', 'unavailable', 'reconciling'] as const)(
     'freezes writes with %s scan state while keeping manual checks usable',
     async (status) => {

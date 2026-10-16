@@ -49,6 +49,7 @@ export function WorkspacesView({
     null,
   );
   const [skipping, setSkipping] = useState(false);
+  const view = useRef<HTMLDivElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const rowElements = useRef(new Map<string, HTMLLIElement>());
   const removalPending = useRef(false);
@@ -72,18 +73,33 @@ export function WorkspacesView({
     for (const id of ids) {
       const action = rowElements.current
         .get(id)
-        ?.querySelector<HTMLInputElement>('input');
-      if (action && !action.disabled) {
+        ?.querySelector<HTMLElement>(
+          'input:not(:disabled), button:not(:disabled)',
+        );
+      if (action) {
         action.focus();
         return;
       }
     }
-    addButton.current?.focus();
+    if (addButton.current && !addButton.current.disabled)
+      addButton.current.focus();
+    else view.current?.querySelector<HTMLHeadingElement>('h1')?.focus();
   }
   useLayoutEffect(() => {
     if (pendingInvoker.current && !activeRemoval && !workspaces.adding) {
-      if (pendingInvoker.current.isConnected) pendingInvoker.current.focus();
+      if (
+        pendingInvoker.current.isConnected &&
+        !pendingInvoker.current.matches(':disabled')
+      )
+        pendingInvoker.current.focus();
+      else
+        focusFallback(
+          pendingFocus.current ??
+            listing?.workspaces.map((row) => row.id) ??
+            [],
+        );
       pendingInvoker.current = null;
+      pendingFocus.current = null;
     } else if (pendingFocus.current) {
       focusFallback(pendingFocus.current);
       pendingFocus.current = null;
@@ -194,8 +210,8 @@ export function WorkspacesView({
   }
   function cancelRemove() {
     if (removalPending.current || !removal) return;
-    if (removal.invoker?.isConnected) pendingInvoker.current = removal.invoker;
-    else pendingFocus.current = removal.neighbors;
+    pendingFocus.current = [removal.workspace.id, ...removal.neighbors];
+    pendingInvoker.current = removal.invoker;
     setRemoval(null);
   }
   async function confirmRemove(id: string) {
@@ -234,7 +250,7 @@ export function WorkspacesView({
     </Button>
   );
   return (
-    <div className="workspaces-view">
+    <div ref={view} className="workspaces-view">
       <ContentHeader
         title="Workspaces"
         description="Configured folders. Scanning starts only when you choose Quick scan or Deep scan."
