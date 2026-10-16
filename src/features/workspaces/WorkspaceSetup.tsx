@@ -11,6 +11,7 @@ export function WorkspaceSetup({
   onSkip,
   focusGeneration = 0,
   recoveryAction,
+  blockedReason,
 }: {
   adding: boolean;
   error: Error | null;
@@ -18,6 +19,7 @@ export function WorkspaceSetup({
   onSkip: () => unknown;
   focusGeneration?: number;
   recoveryAction?: ReactNode;
+  blockedReason?: string;
 }) {
   const pending = useRef(false);
   const invoker = useRef<HTMLElement | null>(null);
@@ -52,6 +54,7 @@ export function WorkspaceSetup({
     <div className="workspace-setup">
       <Section title="Choose workspace folders">
         <p>Workspaces are optional. Adding a folder does not scan it.</p>
+        {blockedReason && <p>{blockedReason}</p>}
         <div className="workspace-actions">
           <Button
             disabled={adding || busy}

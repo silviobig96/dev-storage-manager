@@ -64,6 +64,30 @@ it('loads a skipped empty configuration as ready without selection or checks', a
   expect(result.current.availability).toEqual({});
 });
 
+it('retains configuration and reports scan_in_progress as a definite backend rejection', async () => {
+  const { result } = await ready();
+  ipc.mockRejectedValueOnce({
+    code: 'scan_in_progress',
+    message: '/private/raw',
+  });
+  await act(async () => {
+    await expect(result.current.setEnabled('7', false)).rejects.toMatchObject({
+      code: 'scan_in_progress',
+      source: 'backend',
+      requiresReload: false,
+      message: 'Workspace changes are paused until the scan worker stops.',
+    });
+  });
+  expect(result.current.state).toEqual({
+    status: 'ready',
+    listing: configured,
+  });
+  expect(ipc.mock.calls.map(([name]) => name)).toEqual([
+    'list_workspaces',
+    'set_workspace_enabled',
+  ]);
+});
+
 it('cancel does not mutate or reload and rapid add attempts open selection once', async () => {
   const { result } = await ready();
   const selection = deferred<{ status: 'cancelled' }>();

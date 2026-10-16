@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { ListRow } from '../../components/content/ListRow';
 import { Button } from '../../components/ui/Button';
 import {
@@ -16,6 +16,8 @@ export function WorkspaceRow({
   overlap,
   busy,
   checking,
+  writesBlocked = false,
+  measurement,
   rowRef,
   onEnabled,
   onCheck,
@@ -26,6 +28,8 @@ export function WorkspaceRow({
   overlap: boolean;
   busy: boolean;
   checking: boolean;
+  writesBlocked?: boolean;
+  measurement?: ReactNode;
   rowRef?: Ref<HTMLLIElement>;
   onEnabled: (id: string, enabled: boolean) => void;
   onCheck: (id: string) => void;
@@ -103,11 +107,12 @@ export function WorkspaceRow({
                 variant="inline"
                 announce={false}
               >
-                Overlaps another workspace. Future analysis must avoid double
+                Overlaps another workspace. Scan contributions avoid double
                 counting.
               </FeedbackMessage>
             </div>
           )}
+          {measurement}
         </>
       }
       trailing={
@@ -116,7 +121,7 @@ export function WorkspaceRow({
             <input
               type="checkbox"
               checked={workspace.enabled}
-              disabled={busy}
+              disabled={busy || writesBlocked}
               aria-label={`Enabled for ${identity}`}
               onChange={(event) =>
                 onEnabled(workspace.id, event.target.checked)
@@ -132,7 +137,7 @@ export function WorkspaceRow({
             Check availability
           </Button>
           <Button
-            disabled={busy}
+            disabled={busy || writesBlocked}
             aria-label={`Remove workspace ${identity}`}
             onClick={(event) => onRemove(workspace.id, event.currentTarget)}
           >

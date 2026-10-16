@@ -55,6 +55,7 @@ export interface SetupWorkspaceResult {
 }
 
 const messages = {
+  scan_in_progress: 'Workspace changes are paused until the scan worker stops.',
   operation_in_progress: 'Another workspace operation is in progress.',
   invalid_selection: 'Select a local folder.',
   unsupported_path_encoding:

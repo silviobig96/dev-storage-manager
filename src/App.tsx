@@ -16,7 +16,9 @@ export type HealthState =
 
 function App() {
   const workspaces = useWorkspaces();
-  useWorkspaceScan();
+  const scan = useWorkspaceScan();
+  const scanBlocksWrites =
+    scan.status !== 'ready' || !!scan.snapshot?.workerActive;
   const [currentView, setCurrentView] = useState<AppView>('overview');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<'heading' | { row: string } | null>(null);
@@ -68,6 +70,7 @@ function App() {
   }
 
   async function addFromSetup() {
+    if (scanBlocksWrites) return;
     const intent = navigationIntent.current;
     const invoker = document.activeElement as HTMLElement | null;
     try {
@@ -102,14 +105,26 @@ function App() {
         <OverviewView
           healthState={healthState}
           headingRef={headingRef}
+          scan={scan}
           setup={
             workspaces.state.status === 'ready' &&
             workspaces.state.listing.setupState === 'undecided' && (
               <WorkspaceSetup
-                adding={workspaces.adding || !!workspaces.error?.requiresReload}
+                adding={
+                  workspaces.adding ||
+                  !!workspaces.error?.requiresReload ||
+                  scanBlocksWrites
+                }
                 error={workspaces.error}
                 onAdd={addFromSetup}
-                onSkip={() => workspaces.skip()}
+                onSkip={() => {
+                  if (!scanBlocksWrites) return workspaces.skip();
+                }}
+                blockedReason={
+                  scanBlocksWrites
+                    ? 'Workspace changes are paused until scan status is confirmed and the scan worker has stopped. Check scan status in Workspaces.'
+                    : undefined
+                }
                 focusGeneration={navigationGeneration}
                 recoveryAction={
                   workspaces.error?.requiresReload && (
@@ -129,6 +144,7 @@ function App() {
       ) : (
         <WorkspacesView
           workspaces={workspaces}
+          scan={scan}
           headingRef={headingRef}
           initialFeedback={announcement}
         />

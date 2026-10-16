@@ -1,5 +1,10 @@
 import { useLayoutEffect, useRef, useState, type Ref } from 'react';
 import type { WorkspacesController } from '../features/workspaces/useWorkspaces';
+import type { WorkspaceScanController } from '../features/scans/useWorkspaceScan';
+import {
+  ScanSection,
+  WorkspaceMeasurement,
+} from '../features/scans/ScanSection';
 import { ContentHeader } from '../components/content/ContentHeader';
 import { Section } from '../components/content/Section';
 import { DataList } from '../components/content/DataList';
@@ -28,8 +33,10 @@ export function WorkspacesView({
   workspaces,
   headingRef,
   initialFeedback = null,
+  scan,
 }: {
   workspaces: WorkspacesController;
+  scan?: WorkspaceScanController;
   headingRef?: Ref<HTMLHeadingElement>;
   initialFeedback?: FeedbackNotice | null;
 }) {
@@ -58,6 +65,8 @@ export function WorkspacesView({
       ? removal
       : null;
   const requiresReload = !!workspaces.error?.requiresReload;
+  const writesBlocked =
+    !!scan && (scan.status !== 'ready' || !!scan.snapshot?.workerActive);
 
   function focusFallback(ids: string[]) {
     for (const id of ids) {
@@ -101,7 +110,13 @@ export function WorkspacesView({
     }
   }
   async function add() {
-    if (addPending.current || workspaces.adding || requiresReload) return;
+    if (
+      addPending.current ||
+      workspaces.adding ||
+      requiresReload ||
+      writesBlocked
+    )
+      return;
     addPending.current = true;
     const invoker = document.activeElement as HTMLElement | null;
     setAnnouncement(null);
@@ -127,7 +142,7 @@ export function WorkspacesView({
     }
   }
   async function skip() {
-    if (skipPending.current || requiresReload) return;
+    if (skipPending.current || requiresReload || writesBlocked) return;
     skipPending.current = true;
     setAnnouncement(null);
     setSkipping(true);
@@ -149,6 +164,7 @@ export function WorkspacesView({
     }
   }
   async function setEnabled(id: string, enabled: boolean) {
+    if (writesBlocked) return;
     setAnnouncement(null);
     try {
       const saved = await workspaces.setEnabled(id, enabled);
@@ -161,6 +177,7 @@ export function WorkspacesView({
     }
   }
   function requestRemove(id: string, trigger: HTMLButtonElement) {
+    if (writesBlocked) return;
     const index = listing?.workspaces.findIndex((row) => row.id === id) ?? -1;
     const workspace = listing?.workspaces[index];
     if (!workspace || !listing) return;
@@ -182,7 +199,8 @@ export function WorkspacesView({
     setRemoval(null);
   }
   async function confirmRemove(id: string) {
-    if (removalPending.current || requiresReload || !removal) return;
+    if (removalPending.current || requiresReload || writesBlocked || !removal)
+      return;
     removalPending.current = true;
     setRemoving(true);
     setDialogError(null);
@@ -205,7 +223,9 @@ export function WorkspacesView({
   const addControl = (
     <Button
       ref={addButton}
-      disabled={workspaces.adding || requiresReload || skipping}
+      disabled={
+        workspaces.adding || requiresReload || skipping || writesBlocked
+      }
       onClick={() => {
         void add();
       }}
@@ -217,9 +237,34 @@ export function WorkspacesView({
     <div className="workspaces-view">
       <ContentHeader
         title="Workspaces"
-        description="Folders configured for future analysis. No files are scanned."
+        description="Configured folders. Scanning starts only when you choose Quick scan or Deep scan."
         headingRef={headingRef}
       />
+      {scan && (
+        <ScanSection
+          scan={scan}
+          enabledIds={
+            listing?.workspaces
+              .filter((row) => row.enabled)
+              .map((row) => row.id) ?? []
+          }
+          configurationBusy={
+            !listing ||
+            workspaces.adding ||
+            workspaces.busyIds.size > 0 ||
+            requiresReload ||
+            skipping ||
+            removing ||
+            !!activeRemoval
+          }
+        />
+      )}
+      {writesBlocked && (
+        <p>
+          Workspace changes are paused until scan status is confirmed and the
+          scan worker has stopped. Availability checks remain available.
+        </p>
+      )}
       {workspaces.state.status === 'loading' && (
         <FeedbackMessage tone="info">Loading workspaces…</FeedbackMessage>
       )}
@@ -295,7 +340,12 @@ export function WorkspacesView({
                   {addControl}
                   {listing.setupState === 'undecided' && (
                     <Button
-                      disabled={skipping || workspaces.adding || requiresReload}
+                      disabled={
+                        skipping ||
+                        workspaces.adding ||
+                        requiresReload ||
+                        writesBlocked
+                      }
                       onClick={() => {
                         void skip();
                       }}
@@ -326,6 +376,16 @@ export function WorkspacesView({
                         workspaces.availability[workspace.id]?.state ===
                           'pending' && workspaces.busyIds.has(workspace.id)
                       }
+                      writesBlocked={writesBlocked}
+                      measurement={scan?.snapshot?.workspaces
+                        .filter((row) => row.workspaceId === workspace.id)
+                        .map((result) => (
+                          <WorkspaceMeasurement
+                            key={result.workspaceId}
+                            result={result}
+                            workspaces={scan.snapshot!.workspaces}
+                          />
+                        ))}
                       rowRef={(element) => {
                         if (element)
                           rowElements.current.set(workspace.id, element);
@@ -352,6 +412,7 @@ export function WorkspacesView({
           busy={removing}
           error={dialogError}
           requiresReload={requiresReload}
+          writesBlocked={writesBlocked}
           onReload={() => {
             void reload();
           }}

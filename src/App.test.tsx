@@ -3,6 +3,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import userEvent from '@testing-library/user-event';
+import { scanSnapshot } from './features/scans/scanTestFixtures';
 import {
   listWorkspaces,
   selectAndAddWorkspace,
@@ -52,6 +53,68 @@ function deferred<T>() {
 }
 
 describe('App', () => {
+  it('freezes empty setup on unknown scan state while health and navigation remain usable', async () => {
+    vi.mocked(listWorkspaces).mockResolvedValue({
+      setupState: 'undecided',
+      workspaces: [],
+      overlaps: [],
+    });
+    vi.mocked(getWorkspaceScan).mockRejectedValue(new Error('offline'));
+    render(<App />);
+    expect(await screen.findByText(/foundation connected/i)).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Add workspace' }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeDisabled();
+    expect(screen.getByText(/Workspace changes are paused/)).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    expect(screen.getByRole('button', { name: 'Reconnect' })).toBeEnabled();
+    expect(selectAndAddWorkspace).not.toHaveBeenCalled();
+    expect(skipWorkspaceSetup).not.toHaveBeenCalled();
+  });
+  it('shares an explicitly started scan across views without moving navigation focus or permitting setup writes', async () => {
+    const row = {
+      id: '1',
+      displayName: 'Code',
+      selectedPath: '/fixture/one/Code',
+      enabled: true,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    vi.mocked(listWorkspaces).mockResolvedValue({
+      setupState: 'configured',
+      workspaces: [row],
+      overlaps: [],
+    });
+    const response = deferred<ReturnType<typeof scanSnapshot>>();
+    vi.mocked(startWorkspaceScan).mockReturnValue(response.promise);
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Quick scan' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    const heading = screen.getByRole('heading', { level: 1, name: 'Overview' });
+    expect(heading).toHaveFocus();
+    const request = vi.mocked(startWorkspaceScan).mock.calls[0]![0];
+    await act(async () => {
+      response.resolve(scanSnapshot({ requestId: request.requestId }));
+      await response.promise;
+    });
+    expect(
+      screen.getByText('Scan completed within the declared scope.'),
+    ).toBeVisible();
+    expect(heading).toHaveFocus();
+    expect(startWorkspaceScan).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole('button', { name: 'Quick scan' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    expect(
+      screen.getByText('Scan completed within the declared scope.'),
+    ).toBeVisible();
+    expect(startWorkspaceScan).toHaveBeenCalledOnce();
+  });
   it('keeps setup reload recovery inside its error without re-enabling uncertain mutations', async () => {
     vi.mocked(listWorkspaces)
       .mockResolvedValueOnce({

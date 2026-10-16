@@ -144,7 +144,7 @@ export class ScanCommandError extends Error implements ScanFailure {
   ) {
     super(
       source === 'transport'
-        ? 'Scan status is unavailable. Reconnect to check the current state.'
+        ? 'Scan status is unavailable. Reconnect to check progress.'
         : messages[code],
     );
     this.name = 'ScanCommandError';

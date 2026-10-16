@@ -11,6 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkspacesView } from './WorkspacesView';
 import { useWorkspaces } from '../features/workspaces/useWorkspaces';
 import * as api from '../lib/workspaces';
+import type { WorkspaceScanController } from '../features/scans/useWorkspaceScan';
+import {
+  scanController,
+  scanSnapshot,
+} from '../features/scans/scanTestFixtures';
 
 vi.mock('../lib/workspaces', async (original) => ({
   ...(await original<typeof import('../lib/workspaces')>()),
@@ -49,9 +54,9 @@ function deferred<T>() {
   });
   return { promise, resolve, reject };
 }
-function Harness() {
+function Harness({ scan }: { scan?: WorkspaceScanController }) {
   const workspaces = useWorkspaces();
-  return <WorkspacesView workspaces={workspaces} />;
+  return <WorkspacesView workspaces={workspaces} scan={scan} />;
 }
 const action = (verb: string, row = first) =>
   `${verb} ${row.displayName} — ${row.selectedPath}`;
@@ -90,6 +95,101 @@ afterEach(() => {
 });
 
 describe('Workspaces view', () => {
+  it('keeps Remove dialog focus and safety copy while a late scan status freezes confirmation', async () => {
+    const scan = scanController();
+    const { rerender } = render(<Harness scan={scan} />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: action('Remove workspace') }),
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Remove workspace?' });
+    const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
+    expect(cancel).toHaveFocus();
+    expect(
+      within(dialog).getByText('This only removes the workspace from the app.'),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText('Files on disk will not be deleted.'),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Quick scan' })).toBeDisabled();
+    rerender(
+      <Harness
+        scan={{
+          ...scan,
+          snapshot: scanSnapshot({ state: 'running', workerActive: true }),
+        }}
+      />,
+    );
+    expect(cancel).toHaveFocus();
+    expect(
+      within(dialog).getByRole('button', { name: 'Remove workspace' }),
+    ).toBeDisabled();
+    expect(api.removeWorkspace).not.toHaveBeenCalled();
+  });
+  it.each(['ready', 'unavailable', 'reconciling'] as const)(
+    'freezes writes with %s scan state while keeping manual checks usable',
+    async (status) => {
+      const scan = scanController({
+        status,
+        snapshot: scanSnapshot({
+          workerActive: status === 'ready',
+          state: status === 'ready' ? 'stopping' : 'completed',
+        }),
+      });
+      render(<Harness scan={scan} />);
+      const add = await screen.findByRole('button', { name: 'Add workspace' });
+      expect(add).toBeDisabled();
+      expect(
+        screen.getByRole('checkbox', { name: action('Enabled for') }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: action('Remove workspace') }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: action('Check availability for') }),
+      ).toBeEnabled();
+      expect(screen.getByText(/Workspace changes are paused/)).toBeVisible();
+      expect(
+        within(document.getElementById('workspace-1')!).getByText(
+          'Observed file sizes',
+        ),
+      ).toBeVisible();
+    },
+  );
+  it('preserves all 33 enabled rows and blocks starting without changing configuration', async () => {
+    vi.mocked(api.listWorkspaces).mockResolvedValue(
+      listing(
+        Array.from({ length: 33 }, (_, i) => ({
+          ...first,
+          id: String(i + 1),
+          selectedPath: `/fixture/${i + 1}`,
+        })),
+      ),
+    );
+    const scan = scanController();
+    render(<Harness scan={scan} />);
+    await screen.findByText(
+      'A scan supports up to 32 enabled workspaces. Disable some workspaces to scan.',
+    );
+    expect(screen.getAllByRole('checkbox')).toHaveLength(33);
+    for (const checkbox of screen.getAllByRole('checkbox')) {
+      expect(checkbox).toBeChecked();
+      expect(checkbox).toBeEnabled();
+    }
+    expect(screen.getByRole('button', { name: 'Quick scan' })).toBeDisabled();
+    expect(scan.start).not.toHaveBeenCalled();
+    expect(api.setWorkspaceEnabled).not.toHaveBeenCalled();
+  });
+  it('blocks scan start while the native picker is already open', async () => {
+    vi.mocked(api.selectAndAddWorkspace).mockReturnValue(
+      new Promise(() => undefined),
+    );
+    render(<Harness scan={scanController()} />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add workspace' }),
+    );
+    expect(screen.getByRole('button', { name: 'Quick scan' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deep scan' })).toBeDisabled();
+  });
   it('announces availability in its row without a redundant generic success message', async () => {
     vi.mocked(api.listWorkspaces).mockResolvedValue(listing([first]));
     vi.mocked(api.checkWorkspace).mockResolvedValue({
@@ -228,7 +328,7 @@ describe('Workspaces view', () => {
     expect(screen.getAllByText('Not checked')).toHaveLength(2);
     expect(
       screen.getAllByText(
-        'Overlaps another workspace. Future analysis must avoid double counting.',
+        'Overlaps another workspace. Scan contributions avoid double counting.',
       ),
     ).toHaveLength(2);
     await userEvent.click(

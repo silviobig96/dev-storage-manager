@@ -111,8 +111,7 @@ it('distinguishes backend rejection from unknown transport outcome without expos
   });
   await expect(getWorkspaceScan(invoke)).rejects.toMatchObject({
     source: 'transport',
-    message:
-      'Scan status is unavailable. Reconnect to check the current state.',
+    message: 'Scan status is unavailable. Reconnect to check progress.',
   });
   expect(new ScanCommandError('scan_busy').message).not.toContain('/private');
 });

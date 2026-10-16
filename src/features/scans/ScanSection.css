@@ -1,0 +1,35 @@
+.scan-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.scan-summary,
+.scan-coverage,
+.workspace-measurement {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.scan-summary > *,
+.scan-coverage > *,
+.workspace-measurement > * {
+  margin-block: var(--space-4);
+}
+.workspace-measurement {
+  margin-top: var(--space-5);
+  font-weight: 400;
+}
+.scan-byte-value {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.scan-caption,
+.scan-exact-bytes,
+.scan-diagnostics {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.scan-diagnostics {
+  padding-inline-start: var(--space-6);
+}

@@ -8,15 +8,19 @@ import { AppIcon } from '../components/ui/AppIcon';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
 import './OverviewView.css';
 import type { ReactNode, Ref } from 'react';
+import type { WorkspaceScanController } from '../features/scans/useWorkspaceScan';
+import { ScanSummary } from '../features/scans/ScanSection';
 
 export function OverviewView({
   healthState,
   headingRef,
   setup,
+  scan,
 }: {
   healthState: HealthState;
   headingRef?: Ref<HTMLHeadingElement>;
   setup?: ReactNode;
+  scan?: WorkspaceScanController;
 }) {
   return (
     <div className="overview-view">
@@ -27,10 +31,14 @@ export function OverviewView({
       />
       {setup}
       <Section title="Storage overview">
-        <EmptyState
-          title="No storage analysis yet"
-          description="Storage analysis is not available in this foundation release. No files have been scanned."
-        />
+        {scan?.snapshot ? (
+          <ScanSummary scan={scan} />
+        ) : (
+          <EmptyState
+            title="No storage analysis yet"
+            description="Start an explicit scan from Workspaces to measure configured folders."
+          />
+        )}
       </Section>
       <Section title="Safety posture">
         <DataList>

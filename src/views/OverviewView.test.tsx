@@ -10,9 +10,7 @@ describe('Overview', () => {
     ).toBeVisible();
     const storage = screen.getByRole('region', { name: 'Storage overview' });
     expect(
-      within(storage).getByText(
-        /analysis is not available in this foundation release/i,
-      ),
+      within(storage).getByText(/Start an explicit scan from Workspaces/i),
     ).toBeVisible();
     expect(screen.getByText('Local-first')).toBeVisible();
     expect(screen.getByText('No automatic deletion')).toBeVisible();

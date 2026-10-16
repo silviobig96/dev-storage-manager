@@ -10,6 +10,7 @@ export function RemoveWorkspaceDialog({
   onConfirm,
   requiresReload = false,
   onReload,
+  writesBlocked = false,
 }: {
   workspace: WorkspaceRecord;
   busy: boolean;
@@ -18,6 +19,7 @@ export function RemoveWorkspaceDialog({
   onConfirm: (id: string) => void;
   requiresReload?: boolean;
   onReload?: () => void;
+  writesBlocked?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
@@ -53,6 +55,12 @@ export function RemoveWorkspaceDialog({
         <p>This only removes the workspace from the app.</p>
         <p>Files on disk will not be deleted.</p>
       </div>
+      {writesBlocked && (
+        <p>
+          Workspace changes are paused until scan status is confirmed and the
+          scan worker has stopped.
+        </p>
+      )}
       {error && (
         <FeedbackMessage
           tone="error"
@@ -73,7 +81,7 @@ export function RemoveWorkspaceDialog({
           Cancel
         </Button>
         <Button
-          disabled={busy || requiresReload}
+          disabled={busy || requiresReload || writesBlocked}
           onClick={() => onConfirm(workspace.id)}
         >
           Remove workspace
