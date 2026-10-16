@@ -486,7 +486,12 @@ pub struct ScanLimits {
 
 impl ScanLimits {
     #[cfg(test)]
-    pub(super) fn for_test(depth: usize, attempts: u64, identities: u64, descriptors: usize) -> Self {
+    pub(super) fn for_test(
+        depth: usize,
+        attempts: u64,
+        identities: u64,
+        descriptors: usize,
+    ) -> Self {
         Self {
             max_child_depth: depth,
             max_entry_attempts: attempts,

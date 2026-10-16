@@ -1,6 +1,7 @@
 mod acl;
 mod geometry;
 mod scan_smoke;
+mod scan_ui;
 mod scanner;
 
 use dev_storage_application::ApplicationService;
@@ -24,6 +25,7 @@ pub enum NativeCase {
     InheritedLayout,
     ScannerAcl,
     ScanSmoke,
+    ScanUi,
 }
 
 #[derive(Debug)]
@@ -53,6 +55,7 @@ struct Fixture {
     service: Arc<ApplicationService<MacOsAdapter>>,
     entries: Arc<Mutex<BTreeMap<String, usize>>>,
     runner: Option<Arc<scanner::CountedRunner>>,
+    ui_runner: Option<Arc<scan_ui::UiRunner>>,
     database_path: PathBuf,
     _directory: tempfile::TempDir,
 }
@@ -90,9 +93,10 @@ pub fn main() {
         Some("inherited-layout") => NativeCase::InheritedLayout,
         Some("scanner-acl") => NativeCase::ScannerAcl,
         Some("scan-smoke") => NativeCase::ScanSmoke,
+        Some("scan-ui") => NativeCase::ScanUi,
         _ => {
             eprintln!(
-                "FAIL: expected --case inherited-acl|inherited-layout|scanner-acl|scan-smoke"
+                "FAIL: expected --case inherited-acl|inherited-layout|scanner-acl|scan-smoke|scan-ui"
             );
             std::process::exit(2);
         }
@@ -115,10 +119,16 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
     let database = Database::open(&database_path).map_err(transport)?;
     let runner =
         matches!(case, NativeCase::ScannerAcl).then(|| Arc::new(scanner::CountedRunner::default()));
+    let ui_runner = matches!(case, NativeCase::ScanUi).then(|| Arc::new(scan_ui::UiRunner::new()));
     let service = Arc::new(match &runner {
         Some(runner) => {
             ApplicationService::new_with_scan_runner(MacOsAdapter, database, runner.clone())
         }
+        None if ui_runner.is_some() => ApplicationService::new_with_scan_runner(
+            MacOsAdapter,
+            database,
+            ui_runner.as_ref().unwrap().clone(),
+        ),
         None if matches!(case, NativeCase::ScanSmoke) => {
             crate::native_runtime::application_service(database)
         }
@@ -133,10 +143,18 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         service
             .add_workspace(service.prepare_workspace(&root).map_err(transport)?, 100)
             .map_err(transport)?;
-        if number == 1 && matches!(case, NativeCase::ScanSmoke) {
+        if number == 1 && matches!(case, NativeCase::ScanSmoke | NativeCase::ScanUi) {
             std::fs::create_dir(root.join("nested")).map_err(transport)?;
             std::fs::write(root.join("sentinel"), b"unchanged").map_err(transport)?;
             std::fs::write(root.join("nested/data"), b"abcde").map_err(transport)?;
+        }
+        if number == 2 && matches!(case, NativeCase::ScanUi) {
+            let mut nested = root.clone();
+            for _ in 0..10 {
+                nested = nested.join("depth");
+                std::fs::create_dir(&nested).map_err(transport)?;
+            }
+            std::fs::write(nested.join("sentinel"), b"depth-sentinel").map_err(transport)?;
         }
     }
     let entries = Arc::new(Mutex::new(BTreeMap::<String, usize>::new()));
@@ -180,6 +198,7 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         service,
         entries,
         runner,
+        ui_runner,
         database_path,
         _directory: directory,
     });
@@ -201,6 +220,7 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
                         NativeCase::ScannerAcl => acl::run(&fixture, true).await,
                         NativeCase::InheritedLayout => geometry::run(&fixture).await,
                         NativeCase::ScanSmoke => scan_smoke::run(&fixture).await,
+                        NativeCase::ScanUi => scan_ui::run(&fixture).await,
                     };
                     let code = if outcome.is_ok() { 0 } else { 1 };
                     *collected.lock().unwrap() = Some(outcome);
