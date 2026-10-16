@@ -1,10 +1,17 @@
 mod macos;
 
+use dev_storage_core::workspaces::{AvailabilityObservation, ValidatedWorkspace, WorkspaceFailure};
 use dev_storage_core::Platform;
 pub use macos::MacOsAdapter;
+use std::path::Path;
 
 pub trait PlatformAdapter: Send + Sync {
     fn platform(&self) -> Platform;
+    fn validate_workspace_root(
+        &self,
+        selected: &Path,
+    ) -> Result<ValidatedWorkspace, WorkspaceFailure>;
+    fn check_workspace_root(&self, root: &ValidatedWorkspace, now: i64) -> AvailabilityObservation;
 }
 
 #[derive(Debug, thiserror::Error)]

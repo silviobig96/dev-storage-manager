@@ -54,6 +54,24 @@ mod tests {
         fn platform(&self) -> Platform {
             Platform::MacOs
         }
+
+        fn validate_workspace_root(
+            &self,
+            _: &std::path::Path,
+        ) -> Result<
+            dev_storage_core::workspaces::ValidatedWorkspace,
+            dev_storage_core::workspaces::WorkspaceFailure,
+        > {
+            panic!("health-only fixture must not validate workspaces")
+        }
+
+        fn check_workspace_root(
+            &self,
+            _: &dev_storage_core::workspaces::ValidatedWorkspace,
+            _: i64,
+        ) -> dev_storage_core::workspaces::AvailabilityObservation {
+            panic!("health-only fixture must not check workspaces")
+        }
     }
 
     #[test]
