@@ -559,6 +559,11 @@ button while work is active. The existing rows show their latest contribution
 and coverage separately from root Availability; no per-row start button or new
 selection system. Overview replaces only its truthful scan EmptyState with the
 same session summary when data exists, retaining full structural width/health.
+It also shows reconciling/unavailable status without a snapshot, including a
+lost first Start response. Only a successfully reconciled absence with no
+unresolved Start may show “No storage analysis yet”; an unknown outcome must not
+instruct another new Start. Recovery guidance leads to Workspaces without
+automatically starting or cancelling work.
 No active roots: “No enabled workspace folders. Add or enable a workspace to scan.”
 No progress denominator: show “Scanning…” and “Traversal checks attempted: 1,234”
 from entryAttempts, never an invented object count, percent or ETA.

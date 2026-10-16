@@ -614,7 +614,7 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
       `cargo clippy --workspace --all-targets --locked -- -D warnings`,
       `cargo test --workspace --locked`, `npm run tauri build -- --debug`,
       `git diff --check`. Capture exact exits/counts, not expected totals.
-- [ ] Rerun native inherited-acl/scanner-acl against current shared registration,
+- [x] Rerun native inherited-acl/scanner-acl against current shared registration,
       plus scan-smoke/scan-ui on temporary data. Current native command matrix
       must reject before handlers/picker/DB/scanner. Normal app bundle smoke uses
       only a deliberately selected temporary fixture, never personal workspaces.
@@ -629,7 +629,7 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
       explicit permission for any global change. Record native vs browser vs
       tests vs human; no screenshot pixel inference. Restore native test controls.
       Close P02 layout/zoom only if their full criteria pass, before accepting UI.
-- [ ] Inspect whole diff from `04018df`: no contents/user-file writes, recursive
+- [x] Inspect whole diff from `04018df`: no contents/user-file writes, recursive
       paths outside descriptor scope, networking in product, providers, history,
       new generic grants, stack upgrades or local inventories. Recheck normal
       app/DMG exclusion of harness even with opt-in feature/all-features main
@@ -648,10 +648,20 @@ open. No later provider/dashboard/cleanup feature is executed by this plan.
 Execution receipt at `d1a0261`: automated gates pass (179 frontend/130 Rust),
 all five default native cases pass after unlock, and normal/all-feature app/DMG
 exclusion is inspected. Independent helper/source review approved its implemented
-scope; final whole-branch review is separate. The constant-epoch test assumption
+scope; final whole-branch review found a recovery presentation defect corrected
+and independently re-reviewed in `9da451c`, alongside errno exhaustion diagnosis.
+Current gates pass with 182 frontend / 132 Rust tests, app/DMG and all-features
+compilation. Current scan-smoke and scan-ui passed; the latter was retried once
+only after new manual unlock evidence. The normal bundle passed explicit-ID
+fixture-only Quick/Deep, original configuration restoration and process restart.
+The small retiredEpochs growth remains explicitly deferred, not fixed.
+The constant-epoch test assumption
 was corrected and its unnecessary production relaxation removed completely.
 P02 tracked geometry/zoom/ACL obligations have new resolution evidence.
-Remaining native input, normal-bundle fixture-only smoke, explicit Phase 03
+The human confirmed current native 200% keyboard access to Quick/Deep and row
+actions, full-path scrolling and Escape/Cancel with usable focus return; the
+held case exited 0 and restored native zoom 1.0. This is not a full modal-input
+or visual approval. Remaining native input/accessibility, explicit Phase 03
 human visual approval and publication keep the corresponding boxes unchecked.
 VoiceOver is NOT REPEATED AT HUMAN REQUEST, not PASS; contrast/motion changes
 are unauthorized/unperformed. No Phase 02 acceptance exception is inherited.

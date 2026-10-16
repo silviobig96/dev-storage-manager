@@ -9,9 +9,17 @@ Implementation starts from reviewed design commit
 
 Tasks 1–10 and scoped fixes are implemented/reviewed. Task 11's source/helpers
 also passed independent review. Consolidated automated FUNCTIONAL QA: PASS at
-`d1a0261`; all five default native test cases passed. Current real-input,
-safe normal-bundle smoke and human acceptance remain open. Final whole-branch
-review is pending; this is not complete native verification or phase acceptance.
+`9da451c` (182 frontend / 132 Rust tests). All five default native test cases
+passed at `d1a0261`; current-source scan-smoke and the post-unlock scan-ui rerun
+passed after the final scoped fix. The normal bundle also passed fixture-only
+Quick/Deep, configuration restoration and process-restart checks below. The human
+confirmed the narrowly scoped 200% keyboard/path/dialog check on the earlier
+identified artifact below. Remaining real-input/accessibility and human acceptance
+remain open. Final
+whole-branch review found an Overview recovery presentation defect, now fixed;
+the single scoped re-review confirmed both source corrections, with no new
+Critical/Important breakage. This is not complete native verification or
+phase acceptance.
 HUMAN VISUAL QA: AWAITING HUMAN REVIEW for the new Phase 03 UI.
 Phase 02 visual approval remains granted and is not reopened.
 
@@ -807,7 +815,10 @@ Workspaces, including empty centering, current result controls, separators,
 long paths and no document/main/control horizontal overflow. One measured
 titlebar correction per size; no raster-size inference. WK pageZoom getter
 confirms 2.0 without enlarging to hide pressure and restores 1.0. Native maximize
-measures 1728×965, zoomed 864×482; this is distinct from older P02 dimensions.
+measures 1728×965 (zoomed 864×482) in inherited/supplemental cases; the final
+visible default/held scan-ui case measures 1920×1018 (zoomed 960×509). These
+are per-artifact observations, not a fixed display assumption or the older P02
+dimensions.
 Empty centering delta is at most 0.0078125 CSS px. DOM-activated modal focus and
 Cancel return pass; that is not real keyboard/Escape input.
 
@@ -816,14 +827,25 @@ without personal data. Asked specifically about Add/cancel/reopening, the human
 said “lo veo bien, esta muy grande las letras pero no veo que se duplique nada”.
 This records no duplicated panels observed, not complete cancellation/reopen,
 keyboard-cycle or new Phase 03 visual approval. The large type is the deliberate
-native zoom, not a typography change. A separate current keyboard/zoom question
-is pending. Held-run completion/restoration is also pending collection.
+native zoom, not a typography change.
+
+In that same live fixture the human answered “si” to the separate question about
+Tab/Shift+Tab reaching Quick scan, Deep scan, Enabled, Check availability and
+Remove workspace; full-path reading/scrolling; and closing the dialog with
+Escape or Cancel and returning to a usable control. This is human-reported
+current native functional keyboard/200% evidence, not automated input or visual
+approval. It does not establish unasked modal Tab wrapping/background inertness,
+Cancel scan keyboard activation, VoiceOver or contrast/reduced-motion results.
+The ten-minute held session completed naturally with exit 0 at 18:43:52 local;
+the post-hold native getter verified pageZoom 1.0 before final PASS. No input or
+termination was sent to close it. Pre-hold DB/sentinel assertions do not cover
+any human picker interaction during the hold.
 
 VoiceOver: NOT REPEATED AT HUMAN REQUEST; no fresh Phase 03 PASS. Prior P02
 human evidence stays historical. Increase contrast/Reduce motion authorization
-was not granted, so no global setting was changed. These checks, real current
-keyboard/focus/scroll and human visual approval must not be inferred from DOM
-assertions or builds. No private screenshot was captured or committed.
+was not granted, so no global setting was changed. Remaining real-input scope
+and human visual approval must not be inferred from DOM assertions or builds.
+No private screenshot was captured or committed.
 
 ### Artifact identity and product exclusion
 
@@ -844,9 +866,177 @@ Mount detached. Six QA markers positively exist in the test executable and are
 absent in both normal executables and DMG app; strings alone are not the proof.
 Bundle identifier is unchanged. Loopback listener and UiRunner are test-only.
 
-Normal app/DMG were built and inspected, not launched/scanned in this receipt.
-A fixture-only normal-bundle smoke remains open: never click all-enabled Start
+Normal app/DMG were built and inspected, not launched/scanned in this d1a0261 receipt.
+At that point fixture-only normal-bundle smoke remained open: never click all-enabled Start
 with personal roots enabled, change unrelated flags, reset DB or add a diagnostic
 backdoor. Use existing authorized-main tooling for only a deliberately selected
 temporary fixture ID if available; otherwise report the gap. Final whole-branch
-review, human acceptance and publication remain separate pending steps.
+review, human acceptance and publication remained separate pending steps. The
+later normal-bundle receipt below supplies new evidence, without changing these
+historical labels.
+
+### Remaining acceptance procedures
+
+The current 200% human confirmation closes only the actions explicitly asked
+about. Keep the following scope separate from automated and historical receipts:
+
+| Check                       | Missing evidence / reproducible next step                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full real-input modal cycle | In the fixture window, open Remove; Tab and Shift+Tab through the complete cycle, confirm focus cannot enter the background, then Escape/Cancel and usable return. DOM assertions and the human's narrower return confirmation do not prove the full cycle. |
+| Cancel scan keyboard action | With controlled live work, reach and activate Cancel using the keyboard, observe cancelling/stopping, and confirm configuration remains frozen until worker completion. Synthetic DOM activation is not real input.                                         |
+| Contrast / reduced motion   | Obtain authorization, record original preferences, enable each temporarily, inspect both views and new state feedback in the fixture window, and restore exact originals. No preference was changed in this run.                                            |
+| Fresh screen-reader reading | Not repeated at the human's request; no new Phase 03 reader PASS. Do not substitute the historical P02 result or infer announcements from the DOM.                                                                                                          |
+| Normal-bundle fixture smoke | RESOLVED by the current-source receipt below; only a newly created fixture's ID was passed through the existing authorized-main inspector. No personal enabled root was scanned or modified.                                                                |
+| New human visual approval   | Inspect the actual Phase 03 controls/results at normal zoom, both appearances and small/wide sizes; request explicit approval of this new UI. The keyboard/zoom replies do not grant it.                                                                    |
+
+No future check may expand production permissions, add a diagnostic backdoor,
+reset the real database, select personal roots or silently relabel an omission
+as PASS. Phase 04 has not started, and no release acceptance is granted.
+
+## Final whole-branch review and scoped fix
+
+The read-only independent review covered `04018df..96299bb`, including every
+layer, native authority, test isolation and earlier deferred risks. It found no
+Critical issue or new load-bearing traversal, replay, persistence or containment
+defect, but identified one Important presentation defect: Overview selected its
+empty state solely by snapshot presence, hiding uncertainty after an initial
+status failure or a lost first Start response. A read-only rendering diagnostic
+reproduced the false “No storage analysis yet” prompt.
+
+One fix wave, commit `9da451c97c1d1f38a5ec190b6826064c10add901`, reuses the
+existing summary for reconciling/unavailable states and directs recovery through
+Workspaces. Ready with a confirmed absent session retains the empty state.
+The production hook and its replay/stale guards are unchanged. Four focused
+Overview/App tests failed before the correction; 74 focused frontend tests then
+passed, covering initial read failure, navigation after lost first Start,
+read-only reconciliation, identical explicit replay, mode protection and focus.
+
+The same wave fixes a Minor native errno misdiagnosis: EMFILE/ENFILE now stop
+with DescriptorLimit rather than UnsupportedFilesystem. A failing errno test
+became green for both errors at root/descendant contexts. A core characterization
+test confirms partial coverage, preservation of a measured prefix, no later-root
+work and cursor release; the engine's existing stop propagation needed no change.
+
+### Current-source verification at 9da451c
+
+| Command                                                                                | Actual result                                                                                     |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `npm run format:check`                                                                 | exit 0                                                                                            |
+| `npm run lint`                                                                         | exit 0                                                                                            |
+| `npm run test:run`                                                                     | exit 0; 182 tests / 15 files                                                                      |
+| `npm run build`                                                                        | exit 0; `tsc -b` and Vite 53 modules                                                              |
+| `cargo fmt --all --check`                                                              | exit 0                                                                                            |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings`                       | exit 0                                                                                            |
+| `cargo test --workspace --locked`                                                      | exit 0; 132 tests: application 27, core 41, Tauri 17, persistence 20, platform 27; doc-tests pass |
+| `npm run tauri build -- --debug --verbose`                                             | final exit 0; normal app and DMG                                                                  |
+| `cargo build -p dev-storage-manager --bin dev-storage-manager --all-features --locked` | exit 0; normal main                                                                               |
+| `git diff --check`                                                                     | exit 0                                                                                            |
+
+Focused platform scanner 20/core scanner 37 tests and their Clippy also passed
+before the consolidated workspace run. This was one workspace Rust regression
+pass for the changed errno behavior, not a documentation-only rerun.
+
+The first sandboxed normal package attempt built the app but failed at the DMG
+script. The first sandboxed scan-smoke encountered LaunchServices/hiservices
+XPC errors before readiness; only its owned fixture process was terminated.
+Read-only mount inspection found no app image left mounted. One authorized
+outside-sandbox retry of packaging and smoke passed on unchanged source/config,
+matching the previously documented macOS-service limitation. No production
+permission, host setting or toolchain was changed. These initial failures remain
+identified, not silently converted into successful native evidence.
+
+The exact opt-in scan-smoke command above passed at `9da451c`: production runner,
+explicit temporary ID 1, schema 2, unchanged DB/sentinels. Quick 66 ms and Deep
+78 ms each observed 14 logical / 8192 allocated bytes, two files, two directories
+and five traversal checks, completed with null stopReason and inactive worker.
+The earlier depth-partial UI measurements remain evidence at `d1a0261`, not a
+new benchmark of the corrected artifact.
+
+The exact default opt-in scan-ui command at `9da451c` exited 1 with
+`Timeout("foreground native frontend")` after its existing 60-second wait; it
+did not reach scan assertions. Controller CUA then independently reported the
+Mac locked. No repeated blind attempts or visibility override was used. A single
+manual unlock request was made; opening the normal bundle was also blocked at
+this point. These failed attempts are distinct from the post-unlock results below.
+
+| Current artifact at 9da451c                                | SHA256                                                           |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| Native acceptance executable                               | fc82ca36406fb11227414631a0c5b73074cbfbf7e94fcdb13eff397576eb52eb |
+| Normal app executable                                      | 3a2b78b5995ed0ee77898481ccf7e487d27f54475f68059f50615b37a36616f9 |
+| Debug DMG                                                  | 9b1d341aecff630a1e4ad7ddb5b84922bab4eab036e9c86b8d6496f51358c5bc |
+| All-features normal main, captured before ordinary rebuild | 1ae18528c9e43b5944de47b6119a115e8d2e8d2a7b85be3231154d4dff78b443 |
+
+The five-file fix changes no registration, native test source, dependency edge,
+capability, schema or identifier. Earlier structural/source/DMG exclusion proof
+therefore remains identified at `d1a0261`; current normal/all-features compilation
+also passed. No claim of a second mounted-DMG audit is made.
+
+Explicit minor follow-ups: retiredEpochs retains a string per accepted manual
+session, and the native scanner fixture module can be extracted for readability.
+The small memory-growth risk is deferred rather than weakening opaque-epoch
+stale-response protection during acceptance; a bounded replacement needs its own
+in-flight generation and long-session regressions. Neither is claimed fixed.
+Environmental npm/Vitest/hdiutil advisories remain qualified.
+
+The one scoped re-review of `96299bb..9da451c` confirmed the Overview and errno
+corrections addressed with no new breakage. It explicitly left epochSet growth
+unfixed/deferred and distinguished the blocked UI attempt from historical PASS.
+No second fix wave, repeated whole-branch review or acceptance claim followed.
+
+### Post-unlock native rerun and normal-bundle smoke
+
+The human replied “listo y continua con el trabajo”; CUA independently confirmed
+the unlocked environment. One rerun of the exact default scan-ui command on
+unchanged `9da451c`/native hash `fc82ca36…eb52eb` exited 0, visible Wry, no hold
+or visibility workaround. Quick was partial at 278 ms: 14 logical / 8192 allocated
+bytes, 2 files / 22 directories / 33 checks, depth_limit diagnostic and null
+stopReason. Deep completed at 269 ms: 28 / 12288 bytes, 3 / 23 / 37, null stopReason.
+DB/sentinels, current DOM focus/dialog and native geometry assertions passed.
+These timings are IPC/poll observations on fixtures only. The initially blocked
+current UI attempt is not relabelled; this is fresh sufficient visibility evidence.
+
+`npm run tauri dev` also compiled and started the normal development executable
+on current source (14.20-second Rust build; Vite ready). Its owned session was
+stopped with Ctrl+C, exit 0, before the fixture case to avoid concurrent windows.
+This startup alone did not establish visual or scan PASS.
+
+Controller then opened the current normal `.app` (executable SHA256
+`3a2b78b5…616f9`) using CUA. Actual `tauri://localhost` Overview showed Foundation
+connected / Schema 2 and no scan. Workspaces navigation worked. An existing
+personal enabled record was observed, so the all-enabled Quick/Deep UI controls
+were deliberately not used and no unrelated flag was changed.
+
+The existing debug Web Inspector was available through Inspect Element. Its
+authorized-main console invoked only existing narrow commands, not added QA APIs:
+list_workspaces, select_and_add_workspace, get_workspace_scan,
+start_workspace_scan, get_workspace_scan_session, get_app_health and
+remove_workspace. The native picker was directed explicitly to one newly created
+controlled fixture: two files of 9+5 bytes and one nested directory. Only that
+new record's exact ID was sent, one ID per scan; no JavaScript path went to Start.
+
+| Normal-bundle mode | Result    | Logical / allocated | Files / directories / checks | IPC-to-terminal ms | Stop reason |
+| ------------------ | --------- | ------------------- | ---------------------------- | ------------------ | ----------- |
+| Quick              | completed | 14 / 8192 bytes     | 2 / 2 / 5                    | 58                 | null        |
+| Deep               | completed | 14 / 8192 bytes     | 2 / 2 / 5                    | 56                 | null        |
+
+Runtime assertions verified one result row for only that ID, terminal worker
+inactive, the expected exact logical/file/directory counts, and Schema 2. A JSON
+comparison of listing/setup/overlaps excluding the fixture equalled the original.
+Only the fixture configuration record was then removed; the entire listing again
+equalled the original. The real DB was not reset and its bytes are not claimed
+unchanged across this legitimate add/remove. Both fixture files retained their
+original SHA256 and 9/5-byte lengths; their contents were not read by the scanner.
+Console-only scratch state was removed and the inspector closed; none is product
+code, a capability, a distributed test mode or a committed local inventory.
+
+A normal reload recovered the Deep result in Overview (14 bytes / 8 KiB, exact
+8192 bytes, five checks). Agent inspection captured only that safe native
+Overview, with no personal path; the image is inline tool evidence, not a saved
+repository artifact. The app was quit and reopened normally: Overview returned
+to “No storage analysis yet” with Schema 2, demonstrating process-local results
+rather than persisted history. The reopened app remains available for human
+review. No screenshot pixel dimensions were used as CSS measurements.
+
+This resolves the normal-bundle smoke gap, not real-pointer Quick/Deep UI
+activation, every modal keyboard criterion, contrast/reduced motion or human
+visual approval. HUMAN VISUAL QA remains AWAITING HUMAN REVIEW.
