@@ -37,6 +37,16 @@ describe('content presentation', () => {
     expect(row).toHaveTextContent(/Foundation.*Read-only connection.*Schema 1/);
   });
 
+  it('retains explicit list semantics for markerless rows in WebKit', () => {
+    render(
+      <DataList>
+        <ListRow label="Local-first" />
+      </DataList>,
+    );
+    // WebKit otherwise treats markerless lists outside navigation as layout.
+    expect(screen.getByRole('list')).toHaveAttribute('role', 'list');
+  });
+
   it('explains missing content without requiring a fake action', () => {
     render(
       <EmptyState
