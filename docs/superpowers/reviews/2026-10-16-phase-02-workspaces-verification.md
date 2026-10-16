@@ -6,14 +6,47 @@ Phase 01.5 `8c9fc88`, including wide-window correction `8173c67`. The acceptance
 closure pass below tests product commit `2bb85b8` at checkout `6ccc839`.
 
 **Implementation:** Tasks 1–8 implemented and reviewed, including the reviewed
-frontend race/recovery and native dialog-focus fixes. Task 9 remains open for
-outstanding checks below.
-**FUNCTIONAL QA: PASS.** Consolidated commands pass, including the fresh debug
-application bundle and final formatting correction described below. Native and
-accessibility coverage is partial and is reported separately.
-**VISUAL QA: AWAITING HUMAN REVIEW.** Phase 02 is not complete. Browser rendering,
-automated tests and agent inspection do not constitute human visual approval.
-Historical Phase 01.5 evidence is unchanged; Phase 03 has not been executed.
+frontend race/recovery and native dialog-focus fixes. Task 9's human acceptance
+is recorded; its unperformed native checks remain open.
+**FUNCTIONAL QA: PASS** according to the documented historical product evidence;
+no product suites or native checks were rerun for this acceptance decision.
+**HUMAN VISUAL QA: PASS** — explicit human approval in this conversation.
+**PHASE 02 ACCEPTANCE: ACCEPTED FOR DEVELOPMENT WITH OPEN NATIVE VERIFICATION.**
+**RELEASE ACCEPTANCE: NOT GRANTED.** This is not full native verification or
+readiness for distribution. Historical Phase 01.5 evidence is unchanged;
+Phase 03 has not started.
+
+## Human acceptance decision — 2026-10-16
+
+The human explicitly approved both the running Workspaces presentation/experience
+and proceeding with Phase 02 as a development base while retaining the native
+verification gaps: “okey dale hagamos eso aprobado”. The current documentary task
+explicitly identifies that response as approval of both decisions, not just of
+VoiceOver or of a proposed design.
+
+This is a limited, explicit amendment of Phase 02's original acceptance criterion,
+not permission to skip verification in other phases. A PR may be prepared and
+Phase 02 may be integrated for continued development **only after CI approval
+and a merge decided/performed by the human**. This task publishes documentation
+on the same feature branch; it does not open a PR, merge, release, change
+production permissions or implement Phase 03. Phase 03 design/planning may
+advance in a separate task; real scanner integration must satisfy the ACL gate.
+
+The acceptance carries three open obligations, not three new PASS results:
+[P02-NATIVE-LAYOUT](#p02-native-layout), [P02-NATIVE-ZOOM](#p02-native-zoom) and
+[P02-NATIVE-ACL](#p02-native-acl). Their scope, historical evidence, procedure,
+responsible follow-up and hard integration limits are recorded below. Earlier
+AWAITING HUMAN REVIEW entries describe their dated checkpoints and do not
+override the current human visual PASS. Existing measurements and evidence
+labels remain unchanged. No universal compatibility or release acceptance is
+implied; all safety and no-automatic-deletion rules continue to apply.
+
+This documentary acceptance update starts from clean branch HEAD `9f1da86`.
+Only the verification record, Phase 02 plan/spec and roadmap change; AGENTS.md
+needs no exception because explicit human visual approval now exists. Document
+review, local-link/heading checks, `npm run format:check` and `git diff --check`
+pass. Product test/build results above remain identified with their historical
+commits; no tests, native app, database or OS preference is changed in this task.
 
 ## Historical functional evidence
 
@@ -298,6 +331,9 @@ focus-trap acceptance pass.
 
 ## Acceptance closure pass — 2026-10-16
 
+Historical native evidence from before the human acceptance decision above.
+Its human-approval row records that earlier checkpoint, not the current status.
+
 Started with a clean normal checkout at `6ccc839b0dd3770132a48e1dfe53a2d95eef88a9`,
 on the expected feature branch and unchanged origin. This includes the three
 local feedback-refinement commits after `8827ab9`; none was discarded. Product
@@ -366,14 +402,67 @@ files; no product suites were rerun solely for updating evidence.
 
 ## Remaining acceptance checks
 
-The following remain open and cannot be inferred from automated/browser results:
+All three checks below are **OPEN — DEFERRED WITH HUMAN APPROVAL**. None was
+executed, passed or removed by the acceptance decision. General human visual
+approval is now PASS and is not an additional open check.
 
-- Actual adversarial WKWebView other-origin/webview ACL denial smoke checks;
-  denying creation of that caller is useful but not equivalent evidence.
-- Exact native light/dark 760 × 520, 1100 × 720 and 1600 × 900 CSS matrix,
-  and real 200% zoom with all long-path actions reachable. Maximized native
-  light/dark and the dark 760 × 640 case are now measured above.
-- Explicit human inspection/approval of the running Phase 02 UI.
+### P02-NATIVE-LAYOUT
+
+- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **Exact scope / missing check:** Overview and Workspaces in native macOS
+  light/dark at each exact CSS viewport: 760 × 520, 1100 × 720 and 1600 × 900.
+  Verify structural/section/separator width, centered empty states and no shell
+  horizontal overflow using renderer measurements, not raster capture sizes.
+- **Existing evidence:** Browser matrix at those exact sizes is browser-only.
+  Native both-view maximized light/dark is 1728 × 969 CSS with 1456 px interior;
+  native smaller dark is 760 × 640 CSS with 544 px interior. Both measured cases
+  have no horizontal overflow and Overview centering delta 0 px. Initial native
+  dark 1100 × 688 is not the planned 1100 × 720. No case is relabelled.
+- **Procedure:** [Existing follow-up, step 1](#reproducible-follow-up-for-the-unresolved-checks),
+  including human resizing and authorized appearance changes/restoration.
+- **Responsible follow-up:** The next UI-modifying phase/assignment must include
+  this Phase 02 verification debt in its acceptance work and record real native
+  evidence here. This documentation task does not perform it.
+- **Acceptance limit:** Resolve before accepting the next phase that modifies
+  user-facing UI. Development acceptance of Phase 02 does not waive that gate.
+
+### P02-NATIVE-ZOOM
+
+- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **Exact scope / missing check:** Real 200% WKWebView page zoom, all long-path
+  actions reachable and operable, scrolling, and dialog content/actions.
+- **Existing evidence:** Native long-path keyboard actions and modal cycles
+  worked at ordinary zoom, including 760 × 640 CSS. Native page-zoom invocation
+  with value 2 was denied by the intact production policy; no real 200% result
+  exists. Browser results, CSS scaling and OS magnification are not substitutes.
+- **Procedure:** [Existing follow-up, step 2](#reproducible-follow-up-for-the-unresolved-checks),
+  requiring bounded authorized native debugger/control access, verified pageZoom
+  2.0 and restoration to 1.0 without adding production capabilities.
+- **Responsible follow-up:** The next UI-modifying phase/assignment must arrange
+  the bounded native verification and record it here; not this documentary task.
+- **Acceptance limit:** Resolve before accepting the next phase that modifies
+  user-facing UI; no inference of PASS from the new human visual approval.
+
+### P02-NATIVE-ACL
+
+- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **Exact scope / missing check:** In real WKWebView, reject unauthorized
+  webview/window callers and remote origins for the seven registered commands,
+  before handler/picker/database work, with production policy unchanged.
+- **Existing evidence:** Generated-context MockRuntime ACL/dispatch tests cover
+  denied labels/origins, containing-window guards and unavailable generic APIs.
+  They remain automated evidence, not native evidence. Actual main health works;
+  native creation of a second webview was denied. Denial of its creation does
+  not demonstrate invocation rejection from that caller/origin.
+- **Procedure:** [Existing follow-up, step 3](#reproducible-follow-up-for-the-unresolved-checks),
+  a bounded native test/debug environment with isolated temporary data and
+  independently created native callers. Do not grant generic capabilities,
+  remote grants or a distributed diagnostic/test mode to production.
+- **Responsible follow-up:** Phase 03's scanner integration assignment must
+  include and resolve this dependency before integrating the real scanner.
+  Phase 03 design/planning may advance separately; neither is execution here.
+- **Integration limit:** Resolve before real Phase 03 scanner integration. That
+  integration cannot assume PASS or postpone this obligation until cleanup.
 
 ### Reproducible follow-up for the unresolved checks
 
@@ -410,19 +499,21 @@ The following remain open and cannot be inferred from automated/browser results:
    no harness was built to bypass this limitation. MockRuntime results remain
    separate. This procedure needs that bounded native integration environment,
    not new production capabilities or a broad automation infrastructure.
-4. Request explicit visual approval of the running Phase 02 UI separately.
-   The human's VoiceOver response closes only the requested screen-reader
-   reading-order check. Phase 02 and Task 9 remain incomplete until the above
-   native criteria and general visual acceptance are resolved.
+4. The original follow-up also requested general human visual approval, because
+   the earlier VoiceOver response approved only reading order. That request is
+   now satisfied by the separate [human acceptance decision](#human-acceptance-decision--2026-10-16).
+   The three native checks above stay open under its specific development-only
+   exception; Task 9's unperformed verification boxes stay unchecked.
 
 Automated tests cover loading, empty, retryable error, failed SQLite writes with
 no false success, missing/denied/reappeared root mappings and health regression.
 They are not claims that every fault was reproduced in the running native app.
-The phase remains incomplete while these checks and human visual acceptance
-are outstanding. Feature-branch publication does not establish visual acceptance
-or authorize Phase 03, a PR, merge or release.
+Phase 02 is accepted for development, not fully natively verified or accepted
+for release. Publication alone is not approval; the explicit human decision
+above permits a PR handoff and integration subject to CI and human merge.
+It does not execute Phase 03 or relax the three future acceptance/integration gates.
 
-## Review and publication receipt
+## Historical review and publication receipt
 
 Final independent whole-branch review at `765631d` reported no findings. The
 implementation was ready for its authorized feature-branch publication while

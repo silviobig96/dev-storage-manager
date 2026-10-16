@@ -19,11 +19,12 @@ limited to the reviewed spec's Rust dialog and existing-lockfile bindings.
 
 **Spec:** [Phase 02 design](../specs/2026-10-16-phase-02-workspaces-design.md).
 
-**Status:** Human-reviewed; implementation authorized by the current task.
-Tasks 1–8 are implemented and reviewed; Task 9 is in progress. Only verified
-steps may be checked. Consolidated functional gates pass;
-`VISUAL QA: AWAITING HUMAN REVIEW`, so Phase 02 is not complete. Evidence and
-outstanding checks are recorded in the [verification record](../reviews/2026-10-16-phase-02-workspaces-verification.md).
+**Status:** Tasks 1–8 implemented and reviewed; Task 9's human acceptance is
+recorded with native verification still open. FUNCTIONAL QA: PASS from historical
+product evidence; HUMAN VISUAL QA: PASS by explicit human approval.
+PHASE 02 ACCEPTANCE: ACCEPTED FOR DEVELOPMENT WITH OPEN NATIVE VERIFICATION.
+RELEASE ACCEPTANCE: NOT GRANTED. Only performed checks may be marked complete;
+see the [verification record](../reviews/2026-10-16-phase-02-workspaces-verification.md).
 
 ## Global Constraints
 
@@ -512,6 +513,29 @@ to match actual evidence. Fix only defects in this plan's owning files.
 **Interfaces:** Consumes the implemented Tasks 1–8. Produces an evidence record,
 scoped commits and a human-review handoff, not a scanner or automatic phase PASS.
 
+**Acceptance decision — 2026-10-16:** The human explicitly approved the running
+Workspaces UI and continuing development with the native gaps open: “okey dale
+hagamos eso aprobado”. This is a Phase 02-only amendment, not a general waiver.
+Functional QA relies on the recorded product runs, not new suites in this
+documentary task. Human visual QA is PASS; development acceptance is granted
+with the three linked native checks open, and release acceptance is not granted.
+Preparing a PR/integrating this base requires approved CI and a human-decided
+merge. No PR, merge, release or Phase 03 implementation is performed here.
+
+- [x] Record explicit human visual approval and the limited development-only
+      acceptance in the [dated decision](../reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16).
+- [ ] Resolve [P02-NATIVE-LAYOUT](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
+      before accepting the next UI-modifying phase.
+- [ ] Resolve [P02-NATIVE-ZOOM](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
+      before accepting the next UI-modifying phase.
+- [ ] Resolve [P02-NATIVE-ACL](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+      before integrating the real Phase 03 scanner. Planning may advance in a
+      separate task; no automatic PASS or deferral to cleanup is allowed.
+
+These native items remain OPEN — DEFERRED WITH HUMAN APPROVAL; original
+unperformed verification steps below stay unchecked. Their procedures and
+responsible follow-ups are recorded under those stable identifiers.
+
 - [x] Run the consolidated functional gates once after focused tests:
 
   ```bash
@@ -573,7 +597,8 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
   - [ ] Exact native light/dark size matrix and actual 200% page zoom.
   - [ ] Actual other-caller/origin WKWebView invocation-denial checks. Native
         denial of second-webview creation alone does not satisfy this criterion.
-  - [ ] Explicit human visual acceptance of the running Phase 02 UI.
+  - [x] Explicit human visual acceptance of the running Phase 02 UI, granted
+        separately after this historical closure pass; see the dated decision.
 
   See the verification record's acceptance closure and reproducible follow-up.
   Aggregate items above stay unchecked while their partial criteria remain open.
@@ -590,12 +615,12 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
       `git push -u origin feat/phase-02-workspaces`; verify
       `git ls-remote --heads origin feat/phase-02-workspaces` matches
       `git rev-parse HEAD`. No force, PR, merge or release.
-- [ ] Report functional result, actual browser/native coverage and pending checks.
-      Request human review; only explicit approval of the running Phase 02 UI may
-      establish human visual PASS. Otherwise leave roadmap implementation status
-      incomplete. Phase 03 is not executed under this plan.
+- [x] Report functional result, actual browser/native coverage and pending checks.
+      Human review was requested and explicit running-UI approval is now recorded.
+      Roadmap records development acceptance with open verification, not all checks
+      PASS or release acceptance. Phase 03 is not executed under this plan.
 
-## Implementation verification status
+## Historical implementation and closure evidence
 
 Tasks 1–8 are implemented and reviewed, including fixes `8a3aa63` and `5656296`.
 Task 9's functional commands pass: final frontend 107 tests in 11 files, Rust
@@ -620,17 +645,18 @@ human-confirmed VoiceOver reading order, authorized contrast/motion inspection,
 and measured maximized native light/dark layout. It also measured dark
 760 × 640 and its long-path actions. The exact planned native matrix, real
 200% page zoom, adversarial caller/origin checks and general human visual
-acceptance remain pending; see the granular acceptance checklist above.
-Partially exercised checklist items remain
-unchecked. `VISUAL QA: AWAITING HUMAN REVIEW`; the phase is not complete and
-Phase 03 has not been executed.
+acceptance remained pending at that closure checkpoint. The later dated Task 9
+decision above grants human visual PASS and acceptance for development while
+retaining the three native obligations. Partially exercised/unperformed native
+checklist items remain unchecked; no release acceptance or Phase 03 execution.
 
 Final whole-branch review at `765631d` reported no findings. The controller
 published that checkpoint to `feat/phase-02-workspaces` with a normal push and
 verified the remote head exactly matched local HEAD; the verification record
 contains the full receipt. This receipt does not assert publication of later
-documentation commits. Remaining native/accessibility checks and human visual
-acceptance remain pending.
+documentation commits. Its then-pending human visual acceptance is superseded
+by the dated decision, not by publication; native checks remain open as linked
+above. No functional suite or native inspection is repeated to record approval.
 
 ## Documentation-run verification record
 

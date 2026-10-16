@@ -1,7 +1,9 @@
 # Phase 02 — Workspace System Design
 
-**Status:** Reviewed and authorized for implementation with the 2026-10-16
-execution refinements. Human visual QA of Phase 02 remains pending.
+**Status:** Implemented; FUNCTIONAL QA: PASS from documented historical evidence;
+HUMAN VISUAL QA: PASS by explicit human approval.
+PHASE 02 ACCEPTANCE: ACCEPTED FOR DEVELOPMENT WITH OPEN NATIVE VERIFICATION.
+RELEASE ACCEPTANCE: NOT GRANTED. See the limited acceptance amendment below.
 
 **Date:** 2026-10-16. **Base:** `8c9fc88` on `origin/main`, including Phase
 01.5 and wide-window correction `8173c67`. **Branch:** `feat/phase-02-workspaces`.
@@ -394,7 +396,35 @@ native picker cancellation/add, restart persistence, contrast/reduced motion and
 screen-reader reading order. Preserve the measured full-width Overview behavior.
 Missing native evidence stays pending; do not retrofit Phase 01.5 QA results.
 Both functional QA and explicit human visual approval are required to complete
-the future UI phase. This documentation run claims neither gate for Phase 02.
+the future UI phase. The original design/planning run claimed neither gate for
+Phase 02; the following dated decision records the later limited acceptance.
+
+### Phase 02 acceptance amendment — 2026-10-16
+
+The human explicitly approved the running Workspaces presentation/experience and
+continuing development with open native checks: “okey dale hagamos eso aprobado”.
+This changes only Phase 02's original acceptance criterion: functional QA stays
+PASS on documented historical evidence, human visual QA is PASS, and Phase 02 is
+**ACCEPTED FOR DEVELOPMENT WITH OPEN NATIVE VERIFICATION**, not fully verified
+or accepted for release. No product suites/native checks were rerun to record it.
+
+The [human decision and tracked checks](../reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16)
+are authoritative for this bounded exception:
+
+- [P02-NATIVE-LAYOUT](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
+  and [P02-NATIVE-ZOOM](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
+  stay OPEN — DEFERRED WITH HUMAN APPROVAL; resolve before accepting the next
+  UI-modifying phase.
+- [P02-NATIVE-ACL](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+  has the same open status; resolve before integrating the real Phase 03 scanner,
+  not at cleanup. Phase 03 design/planning may advance in a separate assignment.
+
+A PR may be prepared and Phase 02 integrated as a development base after CI
+approval and a human-decided merge. This documentary task neither opens that
+PR nor merges. No universal compatibility, release approval, generic production
+permissions, safety relaxation or general precedent to omit other phases'
+verification is granted. Functional/security requirements and historical
+measurements/evidence remain unchanged. This task does not start Phase 03.
 
 ## Exclusions
 

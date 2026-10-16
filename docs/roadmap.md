@@ -18,19 +18,39 @@ Phase 01.5 requires both `FUNCTIONAL QA: PASS` and a human `VISUAL QA: PASS`. Au
 
 ## Phase 02 — Workspace System
 
-**Implemented; functional QA passes, human visual QA pending.** See the
+**Accepted for development with open native verification.** FUNCTIONAL QA: PASS
+from documented historical product evidence. HUMAN VISUAL QA: PASS by explicit
+human approval on 2026-10-16. RELEASE ACCEPTANCE: NOT GRANTED. See the
 [specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md) and
 [task plan](superpowers/plans/2026-10-16-phase-02-workspaces.md). Optional setup,
 native folder selection, root validation/identity, schema-2 persistence,
 constrained commands and configuration UI are implemented. Consolidated
-functional gates pass; native coverage remains partial. See the separate
+functional gates passed; native coverage remains partial. See the separate
 [verification record](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md).
-`VISUAL QA: AWAITING HUMAN REVIEW`; Phase 02 is not complete. It configures future
-analysis roots only and does not perform analysis or delete user files.
+The [Phase 02-only acceptance decision](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16)
+allows a PR/development integration subject to approved CI and human merge,
+without claiming full native verification or distribution readiness. It is not
+a general exception to phase gates. It configures future analysis roots only
+and does not perform analysis or delete user files.
+
+- [P02-NATIVE-LAYOUT](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
+  and [P02-NATIVE-ZOOM](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
+  are OPEN — DEFERRED WITH HUMAN APPROVAL. The next UI-modifying phase must
+  resolve both before its acceptance, even if that phase is not Phase 03.
+- [P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+  remains OPEN — DEFERRED WITH HUMAN APPROVAL, to be resolved before real
+  Phase 03 scanner integration with production permissions intact.
 
 Implement optional user-selected workspace configuration for zero, one, or many paths, including validation, local persistence, and macOS selection UX. First-run configuration offers both **Add workspace** and **Skip for now**. Global providers may operate without a configured workspace. A workspace grants read-only analysis scope, not deletion authority, and the application never assumes `~/Repositories` or another default project root.
 
 ## Phase 03 — Read-only Scanner Core
+
+**Not started.** Future design/planning may advance in a separate task, but must
+include [P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+as a prerequisite to integrating the real scanner. It cannot assume native PASS
+or defer the check until cleanup. If this phase changes UI, it also inherits the
+layout/zoom acceptance limits above. No Phase 03 spec, plan or implementation is
+created by the Phase 02 acceptance task.
 
 Implement bounded quick-scan coordination, explicit deep-scan requests, cancellation, progress, size accounting, diagnostics, and synthetic-filesystem tests. Establish protected policy enforcement before scanning real provider locations.
 
