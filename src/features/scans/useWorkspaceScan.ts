@@ -118,19 +118,11 @@ class ScanController {
     const previous = this.state.snapshot;
     if (next && next.epoch !== status.epoch) return false;
     if (this.epoch === status.epoch && previous) {
-      // A confirmed explicit Start (or its recovery read) replaces the retained
-      // terminal session. Unrelated sessions and stale revisions still reject.
-      const pendingReplacement =
-        !previous.workerActive &&
-        this.pending?.expectedEpoch === status.epoch &&
-        next?.requestId === this.pending?.requestId &&
-        next?.sessionId !== previous.sessionId;
       if (
-        !pendingReplacement &&
-        (!next ||
-          next.sessionId !== previous.sessionId ||
-          next.requestId !== previous.requestId ||
-          BigInt(next.revision) < BigInt(previous.revision))
+        !next ||
+        next.sessionId !== previous.sessionId ||
+        next.requestId !== previous.requestId ||
+        BigInt(next.revision) < BigInt(previous.revision)
       )
         return false;
     }

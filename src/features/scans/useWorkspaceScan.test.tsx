@@ -113,7 +113,9 @@ it.each([false, true])(
     vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(nextRequestId);
     const next = {
       ...snapshot,
-      sessionId: 's:p1-t1-g1:2',
+      // The real service increments generation/epoch for every accepted Start.
+      epoch: 'p1-t1-g2',
+      sessionId: 's:p1-t1-g2:2',
       requestId: nextRequestId,
       revision: '1',
     };
@@ -124,7 +126,7 @@ it.each([false, true])(
     });
     if (lostResponse) {
       expect(result.current.status).toBe('unavailable');
-      ipc.mockResolvedValueOnce({ epoch, session: next });
+      ipc.mockResolvedValueOnce({ epoch: next.epoch, session: next });
       await act(async () => {
         await result.current.reconnect();
       });
@@ -151,6 +153,31 @@ it('rejects an unrelated new session when no explicit Start is pending', async (
   });
   await act(async () => {
     await result.current.reconnect();
+  });
+  expect(result.current.status).toBe('unavailable');
+  expect(result.current.snapshot).toEqual(completed);
+  unmount();
+});
+
+it('rejects a new session without the epoch advance required by the service even during Start', async () => {
+  const completed = {
+    ...snapshot,
+    state: 'completed' as const,
+    workerActive: false,
+  };
+  ipc.mockResolvedValueOnce({ epoch, session: completed });
+  const { result, unmount } = renderHook(() => useWorkspaceScan());
+  await flush();
+  const nextRequestId = '11234567-89ab-cdef-0123-456789abcdef';
+  vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(nextRequestId);
+  ipc.mockResolvedValueOnce({
+    ...snapshot,
+    sessionId: 'different-session',
+    requestId: nextRequestId,
+    revision: '1',
+  });
+  await act(async () => {
+    await result.current.start(['7'], 'quick');
   });
   expect(result.current.status).toBe('unavailable');
   expect(result.current.snapshot).toEqual(completed);
