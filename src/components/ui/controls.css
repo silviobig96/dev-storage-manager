@@ -1,0 +1,55 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  font-weight: 500;
+  transition: background-color 100ms ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.button:active:not(:disabled) {
+  background: var(--selection);
+}
+.button--primary {
+  color: var(--selection-text);
+  background: var(--selection);
+  border-color: var(--accent);
+}
+.button:disabled {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+.icon-button {
+  min-width: 28px;
+  padding: var(--space-2);
+}
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+.status-indicator svg {
+  flex: none;
+}
+.status-indicator--safe svg {
+  color: var(--status-safe);
+}
+.status-indicator--review svg {
+  color: var(--status-review);
+}
+.status-indicator--protected svg {
+  color: var(--status-protected);
+}
+.status-indicator--error svg {
+  color: var(--status-error);
+}

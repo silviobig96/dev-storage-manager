@@ -139,7 +139,7 @@ git commit -m "style: add macOS semantic design tokens"
 - Create: `src/components/ui/controls.css`
 - Create: `src/components/ui/ui.test.tsx`
 
-- [ ] **Step 1: Write focused failing accessibility tests**
+- [x] **Step 1: Write focused failing accessibility tests**
 
 Create `src/components/ui/ui.test.tsx` with tests that require:
 
@@ -171,7 +171,7 @@ npm run test:run -- src/components/ui/ui.test.tsx
 
 Expected: FAIL because the components do not exist.
 
-- [ ] **Step 2: Implement one local line-icon language**
+- [x] **Step 2: Implement one local line-icon language**
 
 Create `AppIcon` with a closed TypeScript union for only the symbols needed by
 Phase 01.5:
@@ -194,7 +194,7 @@ type AppIconName =
 Render consistent `currentColor` SVGs with an `18 × 18` view, round line caps,
 and `aria-hidden="true"`. Do not add another icon source or embed emoji.
 
-- [ ] **Step 3: Implement controls and status**
+- [x] **Step 3: Implement controls and status**
 
 Implement:
 
@@ -209,7 +209,7 @@ Implement:
 Every status renders children as visible text. Color and iconography supplement
 that text. Do not add a destructive button variant.
 
-- [ ] **Step 4: Make the focused tests pass**
+- [x] **Step 4: Make the focused tests pass**
 
 Run:
 
@@ -219,7 +219,7 @@ npm run test:run -- src/components/ui/ui.test.tsx
 
 Expected: PASS.
 
-- [ ] **Step 5: Verify the focused component checkpoint**
+- [x] **Step 5: Verify the focused component checkpoint**
 
 Run:
 
@@ -230,7 +230,7 @@ npm run build
 
 Expected: both commands exit zero.
 
-- [ ] **Step 6: Commit the UI primitives**
+- [x] **Step 6: Commit the UI primitives**
 
 ```bash
 git add src/components/ui
@@ -780,3 +780,6 @@ Phase 02 must not begin as part of this plan.
   run's local-only restriction. Human visual acceptance remains independent.
 - Task 1: complete. Baseline tests 3/3; production build and format check pass.
   Concrete neutral palettes documented alongside semantic token implementation.
+- Task 2: complete. Missing-module RED, then 9/9 focused tests pass, including
+  keyboard activation, disabled behavior, form safety, and status text. Lint and
+  production build pass. Local SVGs only; dependencies unchanged.
