@@ -32,6 +32,7 @@ These rules apply to every contributor and automated agent working in this repos
 - Use focused tests before full suites.
 - Make frequent, scoped commits at independently reviewable checkpoints.
 - Use conventional feature branches. Do not create or use a Git worktree unless the human explicitly requests one.
+- Name new branches by purpose: `feat/<topic>`, `fix/<topic>`, or `docs/<topic>`, without an agent/vendor prefix. Do not rename historical branches automatically.
 - Push a feature branch only when the current task explicitly authorizes that push. Authorization does not permit pushing other branches, creating a PR, merging, or releasing.
 - Verify with current command output before claiming completion.
 - Never modify unrelated files.

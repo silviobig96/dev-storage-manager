@@ -158,6 +158,16 @@ The design boundary is platform-adaptable rather than visually universal. Produc
 
 Workspaces are optional and remain a Phase 02 concern. The eventual model supports zero or more user-selected folders and a first-run choice between adding a workspace and skipping configuration. Global providers may operate without a workspace. Neither the UI nor application services may infer `~/Repositories` or any other default project root.
 
+The proposed [Phase 02 specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md)
+and [implementation plan](superpowers/plans/2026-10-16-phase-02-workspaces.md)
+extend the existing layers with configuration-only workspace use cases, a
+Rust-owned native folder picker, root metadata validation, and a transactional
+SQLite migration. They await human review and are not implemented. Removing a
+workspace removes only its application-owned configuration, never its folder.
+The Phase 01/01.5 single-health-command restriction is historical phase scope;
+Phase 02 may introduce only the dedicated commands defined in its reviewed spec.
+Availability is a temporary root observation, not a scan or permission guarantee.
+
 ## UI verification boundary
 
 Every phase that changes user-facing UI has two independent acceptance gates: functional QA and human visual QA. Automated checks and agent inspection can produce `FUNCTIONAL QA: PASS`; only human inspection of the running application can produce `VISUAL QA: PASS`. A UI phase remains incomplete while its visual result is awaiting human review.
