@@ -98,6 +98,65 @@ it('recovers once at mount and never starts, cancels or polls an idle session', 
   expect(ipc.mock.calls).toEqual([['get_workspace_scan']]);
 });
 
+it.each([false, true])(
+  'accepts a new explicit session after completion, lost Start response: %s',
+  async (lostResponse) => {
+    const completed = {
+      ...snapshot,
+      state: 'completed' as const,
+      workerActive: false,
+    };
+    ipc.mockResolvedValueOnce({ epoch, session: completed });
+    const { result, unmount } = renderHook(() => useWorkspaceScan());
+    await flush();
+    const nextRequestId = '11234567-89ab-cdef-0123-456789abcdef';
+    vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(nextRequestId);
+    const next = {
+      ...snapshot,
+      sessionId: 's:p1-t1-g1:2',
+      requestId: nextRequestId,
+      revision: '1',
+    };
+    if (lostResponse) ipc.mockRejectedValueOnce(new Error('lost transport'));
+    else ipc.mockResolvedValueOnce(next);
+    await act(async () => {
+      await result.current.start(['7'], 'quick');
+    });
+    if (lostResponse) {
+      expect(result.current.status).toBe('unavailable');
+      ipc.mockResolvedValueOnce({ epoch, session: next });
+      await act(async () => {
+        await result.current.reconnect();
+      });
+    }
+    expect(result.current.status).toBe('ready');
+    expect(result.current.snapshot).toEqual(next);
+    expect(result.current.pendingStart).toBeNull();
+    unmount();
+  },
+);
+
+it('rejects an unrelated new session when no explicit Start is pending', async () => {
+  const completed = {
+    ...snapshot,
+    state: 'completed' as const,
+    workerActive: false,
+  };
+  ipc.mockResolvedValueOnce({ epoch, session: completed });
+  const { result, unmount } = renderHook(() => useWorkspaceScan());
+  await flush();
+  ipc.mockResolvedValueOnce({
+    epoch,
+    session: { ...snapshot, sessionId: 'unrelated', requestId: 'other' },
+  });
+  await act(async () => {
+    await result.current.reconnect();
+  });
+  expect(result.current.status).toBe('unavailable');
+  expect(result.current.snapshot).toEqual(completed);
+  unmount();
+});
+
 it('polls at 250ms with one query in flight, pauses hidden and reconciles once on show', async () => {
   ipc.mockResolvedValue({ epoch, session: snapshot });
   const { result, unmount } = renderHook(() => useWorkspaceScan());
