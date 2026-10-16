@@ -156,17 +156,21 @@ The design boundary is platform-adaptable rather than visually universal. Produc
 
 ## Workspace configuration boundary
 
-Workspaces are optional and remain a Phase 02 concern. The eventual model supports zero or more user-selected folders and a first-run choice between adding a workspace and skipping configuration. Global providers may operate without a workspace. Neither the UI nor application services may infer `~/Repositories` or any other default project root.
+Phase 02 workspaces are optional: zero or more user-selected folders and a first-run choice between adding a workspace and skipping configuration. Future global providers may operate without a workspace. Neither the UI nor application services may infer `~/Repositories` or any other default project root.
 
-The proposed [Phase 02 specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md)
+The reviewed [Phase 02 specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md)
 and [implementation plan](superpowers/plans/2026-10-16-phase-02-workspaces.md)
-extend the existing layers with configuration-only workspace use cases, a
-Rust-owned native folder picker, root metadata validation, and a transactional
-SQLite migration. They await human review and are not implemented. Removing a
-workspace removes only its application-owned configuration, never its folder.
-The Phase 01/01.5 single-health-command restriction is historical phase scope;
-Phase 02 may introduce only the dedicated commands defined in its reviewed spec.
-Availability is a temporary root observation, not a scan or permission guarantee.
+are implemented through Tasks 1–8: configuration-only workspace use cases, a
+Rust-owned native folder picker, bounded root metadata validation, schema-2
+transactional SQLite persistence, seven constrained application commands, and
+Overview/Workspaces configuration UI. Consolidated functional verification
+passes; native coverage remains partial and human visual QA is awaiting review, so
+Phase 02 is not complete. The [verification record](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md)
+separates automated, browser, native and human evidence. Removing a workspace
+removes only its application-owned configuration, never its folder. The
+Phase 01/01.5 single-health-command restriction is historical phase scope.
+Availability is an explicit temporary root observation, not a scan or permission
+guarantee. Phase 03 scanner behavior remains unimplemented.
 
 ## UI verification boundary
 

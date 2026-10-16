@@ -18,11 +18,15 @@ Phase 01.5 requires both `FUNCTIONAL QA: PASS` and a human `VISUAL QA: PASS`. Au
 
 ## Phase 02 — Workspace System
 
-**Design and implementation plan proposed; not implemented.** See the
+**Implemented; functional QA passes, human visual QA pending.** See the
 [specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md) and
-[task plan](superpowers/plans/2026-10-16-phase-02-workspaces.md). Human review
-is required before execution. Phase 02 configures future analysis roots only;
-it does not perform analysis or delete user files.
+[task plan](superpowers/plans/2026-10-16-phase-02-workspaces.md). Optional setup,
+native folder selection, root validation/identity, schema-2 persistence,
+constrained commands and configuration UI are implemented. Consolidated
+functional gates pass; native coverage remains partial. See the separate
+[verification record](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md).
+`VISUAL QA: AWAITING HUMAN REVIEW`; Phase 02 is not complete. It configures future
+analysis roots only and does not perform analysis or delete user files.
 
 Implement optional user-selected workspace configuration for zero, one, or many paths, including validation, local persistence, and macOS selection UX. First-run configuration offers both **Add workspace** and **Skip for now**. Global providers may operate without a configured workspace. A workspace grants read-only analysis scope, not deletion authority, and the application never assumes `~/Repositories` or another default project root.
 

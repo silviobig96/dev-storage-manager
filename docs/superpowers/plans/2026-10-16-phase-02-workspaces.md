@@ -20,7 +20,10 @@ limited to the reviewed spec's Rust dialog and existing-lockfile bindings.
 **Spec:** [Phase 02 design](../specs/2026-10-16-phase-02-workspaces-design.md).
 
 **Status:** Human-reviewed; implementation authorized by the current task.
-Only verified steps may be checked. Human visual QA remains a separate gate.
+Tasks 1–8 are implemented and reviewed; Task 9 is in progress. Only verified
+steps may be checked. Consolidated functional gates pass;
+`VISUAL QA: AWAITING HUMAN REVIEW`, so Phase 02 is not complete. Evidence and
+outstanding checks are recorded in the [verification record](../reviews/2026-10-16-phase-02-workspaces-verification.md).
 
 ## Global Constraints
 
@@ -108,7 +111,7 @@ checked_at: Option<i64> }`, with reason values exactly from the spec.
   distinguishes an ordinary duplicate from a failure. A same-path/different-
   identity conflict is instead path_already_configured with existing_id.
 
-- [ ] Write failing tests named `workspace_contract`, `workspace_id_validation`,
+- [x] Write failing tests named `workspace_contract`, `workspace_id_validation`,
       and `workspace_overlap`. Pin assertions such as:
 
   ```rust
@@ -127,13 +130,13 @@ checked_at: Option<i64> }`, with reason values exactly from the spec.
   still serialize as strings, same-name roots remain distinct, and paths retain
   Unicode/case exactly. Reject negative/noncanonical IDs and numbers, not just 0.
 
-- [ ] Run `cargo test -p dev-storage-core workspace --locked`; require expected
+- [x] Run `cargo test -p dev-storage-core workspace --locked`; require expected
       missing-contract failures before implementation.
-- [ ] Implement the contracts, deriving camelCase structs and snake_case enum
+- [x] Implement the contracts, deriving camelCase structs and snake_case enum
       values. Use component-based canonical path comparison for advisory overlap;
       equal identities are not overlaps. Do not add safety-policy or scanner types.
-- [ ] Rerun the focused command; require PASS, preserving health serialization.
-- [ ] Commit only core files: `feat: define workspace configuration contracts`.
+- [x] Rerun the focused command; require PASS, preserving health serialization.
+- [x] Commit only core files: `feat: define workspace configuration contracts`.
 
 ## Task 2: Implement read-only macOS root identity and availability
 
@@ -156,31 +159,31 @@ Include Cargo.lock dependency-edge updates at this checkpoint.
   directory type, supported volume UUID, persistent-ID capability, file ID,
   birth time and canonical path for deterministic race/error tests.
 
-- [ ] Write `workspace_root_accepts_unicode_spaces_and_long_paths` with tempfile
+- [x] Write `workspace_root_accepts_unicode_spaces_and_long_paths` with tempfile
       nested directories exceeding 260 total path bytes (each component valid),
       basename `Café 工具 space`; assert exact selected-path round trip and stable
       identity on repeat validation. Real fixtures do not depend on a personal path.
-- [ ] Write `workspace_root_aliases_and_case`: a controlled symlink and a path
+- [x] Write `workspace_root_aliases_and_case`: a controlled symlink and a path
       with `.`/`..` resolve to the same identity; two distinct same-name directories
       differ. On a case-insensitive fixture volume a resolvable case variant is the
       same identity. A fake metadata reader representing a case-sensitive volume
       must preserve distinct IDs for `Code` and `code`; label this simulated-volume
       coverage, not proof that the current disk is case-sensitive.
-- [ ] Write `workspace_root_rejects_changed_or_invalid_targets`: file,
+- [x] Write `workspace_root_rejects_changed_or_invalid_targets`: file,
       missing target, dangling link, symlink loop, non-UTF-8 Unix path, injected
       EACCES/EPERM, unsupported/all-zero UUID, and first/second identity mismatch.
       Assert exact error codes and no lossy identity/path. Real permission denial
       may vary with the test runner; deterministic injected errors are mandatory.
       Test truncated attribute buffers and missing returned-attribute bits:
       decoding returns identity_unavailable without reading beyond supplied bytes.
-- [ ] Run `cargo test -p dev-storage-platform workspace --locked`; record RED.
-- [ ] Implement the two metadata observations and versioned identity in the
+- [x] Run `cargo test -p dev-storage-platform workspace --locked`; record RED.
+- [x] Implement the two metadata observations and versioned identity in the
       macOS module using target-specific libc `=0.2.189`, already in Cargo.lock.
       Validate returned attribute masks/lengths before decoding, no unaligned typed
       pointer dereferences. Root metadata only, never `read_dir`, contents or writes.
       Ensure symlink changes between observations are rejected. Do not request
       permanent-ID allocation. Map missing/denied/replaced roots to spec states.
-- [ ] Add `workspace_root_disconnect_and_return`: validate fixture, rename it
+- [x] Add `workspace_root_disconnect_and_return`: validate fixture, rename it
       inside its tempfile, assert missing, restore it, assert present with unchanged
       identity. Add replacement test expecting unknown/identity_changed. Snapshot a
       sentinel's bytes before/after every validation/check and assert unchanged.
@@ -188,7 +191,7 @@ Include Cargo.lock dependency-edge updates at this checkpoint.
       succeeds without visiting them. The injected metadata reader must record
       requests only for selected/canonical root references and necessary volume
       metadata, with zero content/enumeration/mutation requests.
-- [ ] Rerun focused tests; then `cargo check --workspace --all-targets --locked`
+- [x] Rerun focused tests; then `cargo check --workspace --all-targets --locked`
       for adapter implementer compatibility. Commit:
       `feat: validate workspace roots through macOS metadata`.
 
@@ -210,36 +213,36 @@ Include the corresponding Cargo.lock dependency-edge update.
 - `skip_workspace_setup(&mut self) -> Result<SetupState, WorkspaceFailure>`.
 - Preserve existing `Database::open`, `open_in_memory`, metadata and health APIs.
 
-- [ ] Write `workspace_migrates_schema_one_without_data_loss`: manually construct
+- [x] Write `workspace_migrates_schema_one_without_data_loss`: manually construct
       a temporary SQLite DB using the real unchanged 0001 SQL and `user_version=1`,
       store sentinel metadata, close, open through Database, assert schema 2,
       sentinel unchanged, zero records, undecided. Reopen/reapply: still schema 2.
       A private test migration sequence with invalid second SQL must leave original
       version/metadata and no partially created table after rollback.
-- [ ] Write `workspace_round_trip`: insert two roots with distinct identity,
+- [x] Write `workspace_round_trip`: insert two roots with distinct identity,
       reopen database, assert same IDs, exact paths, enabled=true, timestamps and
       configured setup. Test toggle persistence and idempotence; skip persists on
       reopen and never changes configured to skipped.
-- [ ] Write `workspace_unique_across_connections` with two independent
+- [x] Write `workspace_unique_across_connections` with two independent
       connections, a barrier and busy timeout. Assert one successful insert and one
       duplicate result referencing that ID, total length 1. If initial contention
       returns persistence_unavailable, retry the losing operation after the first
       commits and require duplicate; never accept two successes. Also test exact
       selected/canonical-path conflicts with a different identity return
       path_already_configured. Do not `ON CONFLICT UPDATE` a workspace.
-- [ ] Write `workspace_failure_rolls_back_setup`: inject an aborting SQLite
+- [x] Write `workspace_failure_rolls_back_setup`: inject an aborting SQLite
       trigger in a temp DB on the setup metadata write; assert failed add leaves
       zero rows and undecided. Test unknown IDs, invalid stored setup metadata,
       sanitized query/constraint failures and unchanged sentinel metadata.
       `workspace_remove_last_keeps_setup` asserts zero rows/configured after remove
       and after reopen; a new insert gets a different ID.
-- [ ] Run `cargo test -p dev-storage-persistence workspace --locked`; record RED.
-- [ ] Append the migration to `Migrations::new` in order; implement STRICT
+- [x] Run `cargo test -p dev-storage-persistence workspace --locked`; record RED.
+- [x] Append the migration to `Migrations::new` in order; implement STRICT
       schema/unique keys exactly as spec, bound SQL, immediate add transaction,
       atomic setup update, one-second busy timeout and committed-result mapping.
       Reuse the existing sanitized PersistenceError behavior; typed duplicate
       resolution must not expose driver errors. No real DB reset or new database.
-- [ ] Rerun focused tests and existing persistence tests. Commit scoped files:
+- [x] Rerun focused tests and existing persistence tests. Commit scoped files:
       `feat: persist workspace configuration with schema migration`.
 
 ## Task 4: Coordinate workspace use cases in ApplicationService
@@ -265,25 +268,25 @@ Include Cargo.lock if adding the test-only dependency changes its graph.
 - `skip_workspace_setup(&self) -> Result<SetupState, WorkspaceFailure>`.
   prepare/add are Rust-only stages; no deserializable validated-root IPC input.
 
-- [ ] Write `workspace_use_cases` with counted fake adapter and temporary DB:
+- [x] Write `workspace_use_cases` with counted fake adapter and temporary DB:
       list/skip/enable/remove make zero FS calls; prepare validates once; add persists
       once; nested roots return overlap and remain two records. Known-ID check
       loads stored root, calls metadata adapter once, never mutates configuration.
-- [ ] Write `workspace_validation_failure_never_saves`: all validation errors,
+- [x] Write `workspace_validation_failure_never_saves`: all validation errors,
       changed identity and duplicate result leave setup and records unchanged.
       Keep count/assertions on adapter and repository state, not source strings.
-- [ ] Write `workspace_remove_preserves_files`: temp root with `sentinel.txt`
+- [x] Write `workspace_remove_preserves_files`: temp root with `sentinel.txt`
       containing `keep me`, register, remove by ID, assert root still a directory,
       bytes still `b"keep me"`, and list empty/configured after reopen. Add disabled
       and missing-root removal cases; no platform call needed for config removal.
-- [ ] Write `workspace_slow_check_does_not_lock_database`: fake adapter blocks on
+- [x] Write `workspace_slow_check_does_not_lock_database`: fake adapter blocks on
       a barrier; while check waits on another thread, health and list complete and
       reflect schema 2. Release/join the fixture thread without timing-only sleeps.
-- [ ] Run `cargo test -p dev-storage-application workspace --locked`; record RED.
-- [ ] Implement short DB lock regions, platform work outside them, error mapping
+- [x] Run `cargo test -p dev-storage-application workspace --locked`; record RED.
+- [x] Implement short DB lock regions, platform work outside them, error mapping
       and conversion to public DTOs. No file traversal, provider/service registry,
       generalized repository framework or cleanup dependency.
-- [ ] Rerun focused tests plus existing health tests in application and Tauri.
+- [x] Rerun focused tests plus existing health tests in application and Tauri.
       Commit: `feat: coordinate workspace configuration operations`.
 
 ## Task 5: Expose narrow commands and the native picker securely
@@ -313,32 +316,32 @@ Duplicate { existing_id }}` with internally tagged snake_case `status` and
   passes no user-provided options. Test implementation completes callbacks
   explicitly without displaying a dialog.
 
-- [ ] Write `workspace_transport_cancel_and_busy`: hold a fake picker callback,
+- [x] Write `workspace_transport_cancel_and_busy`: hold a fake picker callback,
       second add returns operation_in_progress; complete with None, assert cancelled,
       unchanged DB/setup, gate reusable. Complete with error, assert gate reusable.
       An unexpected JS `path` field must never reach root validation: only the
       fake picker's selected result can do so; extra fields are not an add API.
       No path argument exists on the registered command. On dropped receiver, callback
       must not panic or save after cancellation.
-- [ ] Write `workspace_transport_deadline`: inject a 10ms test deadline (production
+- [x] Write `workspace_transport_deadline`: inject a 10ms test deadline (production
       3 seconds) and a barrier-blocked validation. Assert validation_timeout, zero
       DB writes, two held permits prevent a third worker, and late completion cannot
       insert. Manual check timeout returns unknown/timeout; permits are released
       only after underlying jobs finish. Do not timeout the separate DB commit
       and then falsely claim it failed; return its actual committed outcome.
-- [ ] Write `workspace_transport_contract`: fake-picker add creates a row,
+- [x] Write `workspace_transport_contract`: fake-picker add creates a row,
       duplicate returns existingId, errors expose only code/message/optional ID.
       Check field casing, malformed IDs and nonboolean enabled rejected before work.
       Preserve existing health contract tests, with real schema version 2.
-- [ ] Write `workspace_acl` using Tauri's existing test/mock-runtime facilities
+- [x] Write `workspace_acl` using Tauri's existing test/mock-runtime facilities
       (enable the Tauri `test` feature for dev only if needed). Exercise a fully
       generated context/authority and invocation, not only a label helper:
       local main commands allowed; ungranted window/webview and remote origin denied;
       `plugin:dialog|open`, `plugin:dialog|save`, `plugin:fs|read_file` and shell
       invocation denied/not registered. Picker/service call counters must remain
       zero for denied callers. Include get_app_health in the main allowlist.
-- [ ] Run `cargo test -p dev-storage-manager workspace --locked`; record RED.
-- [ ] Implement Rust callback picker and async command dispatch. Add dialog
+- [x] Run `cargo test -p dev-storage-manager workspace --locked`; record RED.
+- [x] Implement Rust callback picker and async command dispatch. Add dialog
       `=2.4.0`, Tokio `=1.53.1` with `sync,time`. Resolve the transitive FS plugin
       to 2.4.2 in Cargo.lock without initializing it. The dialog package's compatible
       manifests are linked in the spec; never run the broad Tauri add wizard that
@@ -347,7 +350,7 @@ Duplicate { existing_id }}` with internally tagged snake_case `status` and
       Tauri/frontend/toolchain versions. Audit optional watcher features remain off.
       Use `spawn_blocking` for DB work as well as metadata; an async command must
       not run synchronous SQLite contention on the event-loop thread.
-- [ ] Declare all seven app commands in `AppManifest::commands` in build.rs;
+- [x] Declare all seven app commands in `AppManifest::commands` in build.rs;
       add their generated `allow-*` entries to default capability with `local: true`,
       `webviews: ["main"]` only and no `windows` grant (OR semantics), no remote.
       Retain core:default. Add injected main webview and real containing-window
@@ -355,7 +358,7 @@ Duplicate { existing_id }}` with internally tagged snake_case `status` and
       cannot inherit commands. No dialog/fs/shell grants or generic
       scopes. Callback uses oneshot; blocking metadata uses two retained permits
       and timeout; DB jobs are short and separate. No mutex is held across await.
-- [ ] Run focused tests, `cargo check --workspace --all-targets --locked` and
+- [x] Run focused tests, `cargo check --workspace --all-targets --locked` and
       `cargo tree -e features -p dev-storage-manager`; inspect generated ACL manifest
       and dependency diff. Build validates real permission names. Commit:
       `feat: add constrained native workspace commands`.
@@ -388,7 +391,7 @@ Do not replace `src/lib/desktop.ts` or its tests.
   errors on failure. Hook lives at App level so view navigation doesn't discard
   configuration or create automatic availability requests.
 
-- [ ] Write `workspace bridge sends only narrow arguments`: injected invoke spy
+- [x] Write `workspace bridge sends only narrow arguments`: injected invoke spy
       requires exact command names and payloads, no path/options. For example:
 
   ```ts
@@ -402,20 +405,20 @@ Do not replace `src/lib/desktop.ts` or its tests.
   Pin all other wrappers analogously to the IPC table, including cancelled as
   a resolved outcome, errors as rejected values.
 
-- [ ] Write hook tests with controlled promises and renderHook/act: initial
+- [x] Write hook tests with controlled promises and renderHook/act: initial
       zero+skipped remains ready/empty; no automatic add/check; cancel doesn't
       mutate; add and duplicate reconcile authoritative listing; failed SQL leaves
       rows/setup unchanged; enabled/remove change only after success. Double-click
       attempts call selection once. Last removal never changes configured setup.
-- [ ] Write `workspace ignores stale results`: StrictMode load restart,
+- [x] Write `workspace ignores stale results`: StrictMode load restart,
       out-of-order reload and checks, removal during a check, late resolve/reject
       after unmount. Assert no revived row/overwritten newer observation. On transport
       failure after a committed remove, mock reload without that ID; require
       reconciliation and no automatic second remove or false rollback announcement.
-- [ ] Run `npm run test:run -- src/lib/workspaces.test.ts src/features/workspaces/useWorkspaces.test.tsx`;
+- [x] Run `npm run test:run -- src/lib/workspaces.test.ts src/features/workspaces/useWorkspaces.test.tsx`;
       record RED. Implement minimal wrappers and request generations/in-flight refs,
       pessimistic mutations, authoritative reload and observable retry errors.
-- [ ] Rerun focused tests, lint and build (includes `tsc -b`). Commit:
+- [x] Rerun focused tests, lint and build (includes `tsc -b`). Commit:
       `feat: manage workspace configuration state in the frontend`.
 
 ## Task 7: Activate navigation and optional setup without blocking Overview
@@ -438,22 +441,22 @@ heading ref only if the view needs them; preserve existing rendering defaults.
   and callbacks; no direct IPC. It appears only for undecided setup; Workspaces
   empty state uses the same copy/actions, not a second stacked prompt.
 
-- [ ] Update shell tests first: available Overview/Workspaces buttons operable
+- [x] Update shell tests first: available Overview/Workspaces buttons operable
       by keyboard; selected button has aria-current page; other destinations have
       no button/link/tabindex. After explicit navigation current main name/header
       and focused h1 change; skip link still reaches main. Update old
       Phase-01.5-only no-buttons assertions narrowly, not health protections.
-- [ ] Write setup tests: neither app render nor navigation opens picker;
+- [x] Write setup tests: neither app render nor navigation opens picker;
       Skip calls action once, prompt disappears only on saved skipped/configured;
       failure remains actionable. Overview stays usable when workspace loading
       fails. Health loading/connected/unavailable and StrictMode stale-result tests
       remain intact with independent workspace mocks.
-- [ ] Run `npm run test:run -- src/components/shell/shell.test.tsx src/features/workspaces/WorkspaceSetup.test.tsx src/App.test.tsx`;
+- [x] Run `npm run test:run -- src/components/shell/shell.test.tsx src/features/workspaces/WorkspaceSetup.test.tsx src/App.test.tsx`;
       record RED. Implement controlled two-view navigation, optional inline setup
       and focus transfer only for explicit view changes. Keep current health effect,
       Overview width and native titlebar unchanged. Task 8 supplies Workspaces view;
       do not publish a fake route as a completed feature before it is connected.
-- [ ] Rerun focused tests and commit this navigation checkpoint together with
+- [x] Rerun focused tests and commit this navigation checkpoint together with
       Task 8's connected view if the intermediate app would not compile. Do not
       weaken the gate to commit a broken placeholder. Checkpoint message:
       `feat: enable workspace navigation and optional setup`.
@@ -476,27 +479,27 @@ Keep feature styles scoped in WorkspacesView.css; no global palette edits.
   uses native HTML dialog semantics/showModal, not simulated window chrome;
   confirmation callback receives workspace ID only. Parent owns focus fallback.
 
-- [ ] Write concrete tests for loading/error/retry/empty and one/multiple rows.
+- [x] Write concrete tests for loading/error/retry/empty and one/multiple rows.
       For two `Code` names with different fixture paths, query actions by full
       accessible name and assert each targets the correct ID. Full long path must
       be present in text, not exclusively title. Pending is Not checked; absent,
       denied, unknown and found use exact meanings from spec. Enabled and Check
       call only their own callbacks, no analysis action. Overlap message is visible.
-- [ ] Write removal tests using a controlled save promise: initial Cancel focus,
+- [x] Write removal tests using a controlled save promise: initial Cancel focus,
       Escape/cancel sends no remove, exact reassurance copy visible, confirm sends
       ID once, row persists while saving/failure, busy prevents duplicate/dismissal,
       success removes row and restores next/previous/Add focus. Removing last leaves
       configured empty, no Skip prompt. Add/cancel focus restores to its invoker;
       duplicate focuses existing row, not a success row.
-- [ ] Run `npm run test:run -- src/views/WorkspacesView.test.tsx src/features/workspaces/RemoveWorkspaceDialog.test.tsx`;
+- [x] Run `npm run test:run -- src/views/WorkspacesView.test.tsx src/features/workspaces/RemoveWorkspaceDialog.test.tsx`;
       record RED. Use a test-only dialog polyfill if jsdom lacks showModal; this
       cannot prove native focus trapping or actual macOS dialog behavior.
-- [ ] Implement compact rows, exact copy, full selectable wrapping path,
+- [x] Implement compact rows, exact copy, full selectable wrapping path,
       checkbox labels, polite asynchronous announcements and restrained error text.
       Fill available structural width, wrap actions under metadata as needed; no
       overflow hiding, cards or new visual theme. Reuse system contrast/motion rules.
       Every visible control must work. Preserve markerless-list role=list.
-- [ ] Rerun focused tests, full frontend suite and build. Commit coherent view
+- [x] Rerun focused tests, full frontend suite and build. Commit coherent view
       checkpoint: `feat: add accessible workspace configuration view`. If Task 7 was
       deferred, include its files and record both checkpoints as one coherent commit.
 
@@ -509,7 +512,7 @@ to match actual evidence. Fix only defects in this plan's owning files.
 **Interfaces:** Consumes the implemented Tasks 1–8. Produces an evidence record,
 scoped commits and a human-review handoff, not a scanner or automatic phase PASS.
 
-- [ ] Run the consolidated functional gates once after focused tests:
+- [x] Run the consolidated functional gates once after focused tests:
 
   ```bash
   npm run format:check
@@ -528,7 +531,7 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
   impacted broad gates. Do not rerun each Rust crate and then workspace without
   a new reason. Record command output totals, not expected results as actual.
 
-- [ ] Audit `git diff 8c9fc88 --stat` and the complete diff from that base:
+- [x] Audit `git diff 8c9fc88 --stat` and the complete diff from that base:
       commands only as specified, no backend scope creep, no FS write in selected
       roots, no recursive reads, no scans/hooks/watchers, no remote grants or wide
       frontend FS API, no stack upgrades, no personal data. Inspect actual code and
@@ -552,11 +555,11 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
       reader list/path reading, increased contrast and reduced motion where possible.
       Do not change global macOS preferences without permission. Record unsupported
       or unavailable conditions as pending, separately from automated coverage.
-- [ ] Record loading/empty/error, SQLite failure/no false success, missing/denied/
+- [x] Record loading/empty/error, SQLite failure/no false success, missing/denied/
       reappeared observations and health regression. A simulated native picker or
       forced fixture state is labelled as such. No production mock mode is added.
       Captures stay outside Git, sanitized and labelled browser vs native.
-- [ ] Fix any discovered defect with focused regression first. Commit
+- [x] Fix any discovered defect with focused regression first. Commit
       `test: verify workspace configuration boundaries` or a precise defect message;
       commit evidence with `docs: record workspace system verification`.
 - [ ] Require clean checkout and exact feature branch. Push only if the current
@@ -568,6 +571,18 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
       Request human review; only explicit approval of the running Phase 02 UI may
       establish human visual PASS. Otherwise leave roadmap implementation status
       incomplete. Phase 03 is not executed under this plan.
+
+## Implementation verification status
+
+Tasks 1–8 are implemented and reviewed, including fixes `8a3aa63` and `5656296`.
+Task 9's consolidated functional commands pass: frontend 105 tests in 11 files,
+Rust 48 unit tests, strict lint/Clippy, frontend/debug app build and formatting.
+The formatting-only test-file correction has a focused 6-test pass. The
+[verification record](../reviews/2026-10-16-phase-02-workspaces-verification.md)
+details scope, dependency/ACL audit, measured browser coverage and outstanding
+native/accessibility checks. Partially exercised checklist items remain
+unchecked. `VISUAL QA: AWAITING HUMAN REVIEW`; the phase is not complete and
+Phase 03 has not been executed.
 
 ## Documentation-run verification record
 

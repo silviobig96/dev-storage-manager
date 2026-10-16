@@ -44,13 +44,11 @@ it('resolves cancellation and sanitizes known backend rejections including optio
     selectAndAddWorkspace(vi.fn().mockResolvedValue({ status: 'cancelled' })),
   ).resolves.toEqual({ status: 'cancelled' });
   const promise = selectAndAddWorkspace(
-    vi
-      .fn()
-      .mockRejectedValue({
-        code: 'path_already_configured',
-        message: '/private/raw.sql',
-        existingId: '9',
-      }),
+    vi.fn().mockRejectedValue({
+      code: 'path_already_configured',
+      message: '/private/raw.sql',
+      existingId: '9',
+    }),
   );
   await expect(promise).rejects.toBeInstanceOf(WorkspaceCommandError);
   await expect(promise).rejects.toMatchObject({
