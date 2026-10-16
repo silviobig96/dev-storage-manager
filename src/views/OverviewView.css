@@ -1,0 +1,21 @@
+.overview-view {
+  max-width: 880px;
+}
+.foundation-health {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+  margin-top: var(--space-9);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--separator);
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.foundation-health .status-indicator {
+  color: var(--text-tertiary);
+}
+.foundation-health svg {
+  width: 14px;
+  height: 14px;
+}

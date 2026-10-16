@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import { getAppHealth, type AppHealth } from './lib/desktop';
 
-type HealthState =
+export type HealthState =
   | { status: 'loading' }
   | { status: 'connected'; health: AppHealth }
   | { status: 'unavailable' };

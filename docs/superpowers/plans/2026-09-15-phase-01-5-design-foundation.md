@@ -344,7 +344,7 @@ git commit -m "feat: establish macOS application shell"
 - Create: `src/views/OverviewView.css`
 - Create: `src/views/OverviewView.test.tsx`
 
-- [ ] **Step 1: Write failing content-primitive tests**
+- [x] **Step 1: Write failing content-primitive tests**
 
 Require that:
 
@@ -362,7 +362,7 @@ npm run test:run -- src/components/content/content.test.tsx
 
 Expected: FAIL because the components do not exist.
 
-- [ ] **Step 2: Implement the content primitives**
+- [x] **Step 2: Implement the content primitives**
 
 Use semantic headings, sections, and lists. Style grouping with alignment,
 spacing, and separators. Do not wrap every component in a rounded filled
@@ -372,7 +372,7 @@ surface.
 trailing content. Its DOM order must remain meaningful when CSS stacks
 secondary content at narrow widths.
 
-- [ ] **Step 3: Make the content tests pass**
+- [x] **Step 3: Make the content tests pass**
 
 Run:
 
@@ -382,7 +382,7 @@ npm run test:run -- src/components/content/content.test.tsx
 
 Expected: PASS.
 
-- [ ] **Step 4: Write failing Overview behavior tests**
+- [x] **Step 4: Write failing Overview behavior tests**
 
 `OverviewView.test.tsx` supplies explicit health-state props and requires:
 
@@ -403,7 +403,7 @@ npm run test:run -- src/views/OverviewView.test.tsx
 
 Expected: FAIL because `OverviewView` does not exist.
 
-- [ ] **Step 5: Implement `OverviewView`**
+- [x] **Step 5: Implement `OverviewView`**
 
 Accept the existing health union as a prop and compose:
 
@@ -418,7 +418,7 @@ Accept the existing health union as a prop and compose:
 Do not include the previous eyebrow, large slogan, gradient, commitments card
 grid, or representative disk totals.
 
-- [ ] **Step 6: Make the Overview tests pass and commit**
+- [x] **Step 6: Make the Overview tests pass and commit**
 
 Run:
 
@@ -787,3 +787,7 @@ Phase 02 must not begin as part of this plan.
   landmark/current state/reading order verified. Lint and build pass. A working
   skip link and focusable content region provide keyboard access without dead
   navigation controls.
+- Task 4: complete. Content and Overview missing-module RED runs, then 7/7
+  focused tests and build pass. The existing health union is exported as a
+  type from App without changing runtime behavior. Foundation uses an inline
+  status footer rather than a prominent section, as refined by the task.
