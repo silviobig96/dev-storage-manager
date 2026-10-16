@@ -3,6 +3,63 @@ use crate::workspaces::WorkspaceId;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+/// Fixed native identity, never a path or transport token.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ObjectIdentity {
+    pub volume_uuid: [u8; 16],
+    pub file_id: u64,
+    pub birth_seconds: i64,
+    pub birth_nanoseconds: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScanEntry {
+    pub name: std::ffi::OsString,
+    pub identity: Option<ObjectIdentity>,
+    pub facts: super::ReadFacts,
+    pub logical_bytes: Option<u64>,
+    pub allocated_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanIoError {
+    Diagnostic(ScanDiagnosticCode),
+    Stopped(StopReason),
+}
+
+pub trait ScanIoControl: Send + Sync {
+    fn checkpoint(&self) -> Result<(), StopReason>;
+}
+
+/// Metadata-only platform boundary; names never leave Rust.
+pub trait ScanFilesystem: Send + Sync {
+    fn anchor_root(
+        &self,
+        root: &crate::workspaces::StoredWorkspace,
+        control: &dyn ScanIoControl,
+    ) -> Result<Box<dyn ScanDirectory>, ScanIoError>;
+}
+
+/// One owned directory descriptor per frame. The caller retains the parent and
+/// verifies its link before continuing a child; cursors never duplicate parents.
+pub trait ScanDirectory: Send {
+    fn identity(&self) -> ObjectIdentity;
+    fn next_entry(&mut self, control: &dyn ScanIoControl)
+        -> Result<Option<ScanEntry>, ScanIoError>;
+    fn open_child(
+        &mut self,
+        entry: &ScanEntry,
+        control: &dyn ScanIoControl,
+    ) -> Result<Box<dyn ScanDirectory>, ScanIoError>;
+    fn verify_link(
+        &self,
+        entry: &ScanEntry,
+        child: &ObjectIdentity,
+        control: &dyn ScanIoControl,
+    ) -> Result<(), ScanIoError>;
+    fn finish(&mut self, control: &dyn ScanIoControl) -> Result<(), ScanIoError>;
+}
+
 fn canonical_decimal(value: &str) -> bool {
     !value.is_empty()
         && (value.len() == 1 || !value.starts_with('0'))

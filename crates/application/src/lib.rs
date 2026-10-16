@@ -51,6 +51,9 @@ mod tests {
     struct TestPlatform;
 
     impl PlatformAdapter for TestPlatform {
+        fn scan_filesystem(&self) -> Box<dyn dev_storage_core::scanner::ScanFilesystem> {
+            panic!("health-only fixture must not request a scan filesystem")
+        }
         fn platform(&self) -> Platform {
             Platform::MacOs
         }

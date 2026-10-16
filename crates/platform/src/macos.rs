@@ -7,9 +7,25 @@ use crate::PlatformAdapter;
 #[cfg(target_os = "macos")]
 mod workspaces;
 
+#[cfg(target_os = "macos")]
+mod scanner;
+
+#[cfg(target_os = "macos")]
+mod identity;
+
 pub struct MacOsAdapter;
 
 impl PlatformAdapter for MacOsAdapter {
+    fn scan_filesystem(&self) -> Box<dyn crate::scanner::ScanFilesystem> {
+        #[cfg(target_os = "macos")]
+        {
+            Box::new(scanner::NativeFilesystem::default())
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            Box::new(crate::scanner::UnsupportedFilesystem)
+        }
+    }
     fn platform(&self) -> Platform {
         Platform::MacOs
     }

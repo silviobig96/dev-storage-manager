@@ -1,4 +1,5 @@
 mod macos;
+pub mod scanner;
 
 use dev_storage_core::workspaces::{AvailabilityObservation, ValidatedWorkspace, WorkspaceFailure};
 use dev_storage_core::Platform;
@@ -6,6 +7,7 @@ pub use macos::MacOsAdapter;
 use std::path::Path;
 
 pub trait PlatformAdapter: Send + Sync {
+    fn scan_filesystem(&self) -> Box<dyn scanner::ScanFilesystem>;
     fn platform(&self) -> Platform;
     fn validate_workspace_root(
         &self,

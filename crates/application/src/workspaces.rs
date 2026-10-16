@@ -145,6 +145,9 @@ mod tests {
     }
 
     impl PlatformAdapter for TestAdapter {
+        fn scan_filesystem(&self) -> Box<dyn dev_storage_core::scanner::ScanFilesystem> {
+            panic!("workspace-only fixture must not request a scan filesystem")
+        }
         fn platform(&self) -> Platform {
             Platform::MacOs
         }

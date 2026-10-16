@@ -1,3 +1,4 @@
+use super::identity::{ROOT_ATTRIBUTES, VOLUME_ATTRIBUTES};
 use dev_storage_core::workspaces::{
     AvailabilityObservation, AvailabilityReason, AvailabilityState, DirectoryIdentity,
     ValidatedWorkspace, WorkspaceErrorCode, WorkspaceFailure,
@@ -126,14 +127,13 @@ fn identity(metadata: &RootMetadata) -> Result<DirectoryIdentity, RootError> {
     {
         return Err(RootError::Code(WorkspaceErrorCode::IdentityUnavailable));
     }
-    let volume: String = metadata
-        .volume_uuid
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    Ok(DirectoryIdentity::new(format!(
-        "macos-v1:{volume}:{:x}:{}:{}",
-        metadata.file_id, metadata.birth_seconds, metadata.birth_nanoseconds
+    Ok(DirectoryIdentity::new(super::identity::wire_identity(
+        dev_storage_core::scanner::ObjectIdentity {
+            volume_uuid: metadata.volume_uuid,
+            file_id: metadata.file_id,
+            birth_seconds: metadata.birth_seconds,
+            birth_nanoseconds: metadata.birth_nanoseconds,
+        },
     )))
 }
 
@@ -211,13 +211,6 @@ fn check_with(
     }
 }
 
-const ROOT_ATTRIBUTES: u32 = libc::ATTR_CMN_RETURNED_ATTRS
-    | libc::ATTR_CMN_OBJTYPE
-    | libc::ATTR_CMN_CRTIME
-    | libc::ATTR_CMN_FILEID;
-const VOLUME_ATTRIBUTES: u32 =
-    libc::ATTR_VOL_INFO | libc::ATTR_VOL_CAPABILITIES | libc::ATTR_VOL_UUID;
-
 fn read_attributes(fd: &OwnedFd, commonattr: u32, volattr: u32) -> Result<[u8; 128], RootError> {
     let mut attributes = libc::attrlist {
         bitmapcount: libc::ATTR_BIT_MAP_COUNT,
@@ -251,57 +244,12 @@ fn unavailable() -> RootError {
     RootError::Code(WorkspaceErrorCode::IdentityUnavailable)
 }
 
-fn array<const N: usize>(bytes: &[u8], offset: usize) -> Result<[u8; N], RootError> {
-    bytes
-        .get(offset..offset.checked_add(N).ok_or_else(unavailable)?)
-        .ok_or_else(unavailable)?
-        .try_into()
-        .map_err(|_| unavailable())
-}
-
-fn attribute_payload(
-    bytes: &[u8],
-    length: usize,
-    common: u32,
-    volume: u32,
-) -> Result<&[u8], RootError> {
-    let actual_length = u32::from_ne_bytes(array(bytes, 0)?) as usize;
-    if actual_length != length || actual_length > bytes.len() {
-        return Err(unavailable());
-    }
-    let bytes = &bytes[..actual_length];
-    // Require every data-bearing attribute and reject unexpected data fields;
-    // ATTR_VOL_INFO is a request marker with no bytes, so its return bit is optional.
-    if u32::from_ne_bytes(array(bytes, 4)?) != common
-        || (u32::from_ne_bytes(array(bytes, 8)?) & !libc::ATTR_VOL_INFO) != volume
-        || bytes[12..24] != [0; 12]
-    {
-        return Err(unavailable());
-    }
-    Ok(bytes)
-}
-
 fn decode_root(bytes: &[u8]) -> Result<(bool, u64, i64, i64), RootError> {
-    let bytes = attribute_payload(bytes, 52, ROOT_ATTRIBUTES, 0)?;
-    // Darwin enum vtype VDIR = 2; fsobj_type_t is a 32-bit native integer.
-    let is_directory = u32::from_ne_bytes(array(bytes, 24)?) == 2;
-    let seconds = i64::from_ne_bytes(array(bytes, 28)?);
-    let nanoseconds = i64::from_ne_bytes(array(bytes, 36)?);
-    let file_id = u64::from_ne_bytes(array(bytes, 44)?);
-    Ok((is_directory, file_id, seconds, nanoseconds))
+    super::identity::decode_root(bytes).map_err(|_| unavailable())
 }
 
 fn decode_volume(bytes: &[u8]) -> Result<([u8; 16], bool), RootError> {
-    let bytes = attribute_payload(
-        bytes,
-        72,
-        libc::ATTR_CMN_RETURNED_ATTRS,
-        libc::ATTR_VOL_CAPABILITIES | libc::ATTR_VOL_UUID,
-    )?;
-    let capabilities = u32::from_ne_bytes(array(bytes, 24)?);
-    let valid = u32::from_ne_bytes(array(bytes, 40)?);
-    let persistent = (capabilities & valid & libc::VOL_CAP_FMT_PERSISTENTOBJECTIDS) != 0;
-    Ok((array(bytes, 56)?, persistent))
+    super::identity::decode_volume(bytes).map_err(|_| unavailable())
 }
 
 #[cfg(test)]
