@@ -582,6 +582,7 @@ dependencies = [
  "dev-storage-core",
  "dev-storage-persistence",
  "dev-storage-platform",
+ "tempfile",
  "thiserror 2.0.20",
 ]
 

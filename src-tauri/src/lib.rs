@@ -1,6 +1,6 @@
 mod commands;
 
-use std::{fs, sync::Mutex};
+use std::{fs, sync::Arc};
 
 use dev_storage_application::ApplicationService;
 use dev_storage_persistence::Database;
@@ -14,7 +14,7 @@ pub fn run() {
             fs::create_dir_all(&app_data_directory)?;
             let database = Database::open(&app_data_directory.join("dev-storage-manager.db"))?;
             let service = ApplicationService::new(MacOsAdapter, database);
-            app.manage(Mutex::new(service));
+            app.manage(Arc::new(service));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![commands::get_app_health])

@@ -1,16 +1,22 @@
 use dev_storage_core::AppHealth;
 use dev_storage_persistence::{Database, PersistenceError};
 use dev_storage_platform::PlatformAdapter;
+use std::sync::Mutex;
 use thiserror::Error;
+
+mod workspaces;
 
 pub struct ApplicationService<A> {
     adapter: A,
-    database: Database,
+    database: Mutex<Database>,
 }
 
 impl<A: PlatformAdapter> ApplicationService<A> {
     pub fn new(adapter: A, database: Database) -> Self {
-        Self { adapter, database }
+        Self {
+            adapter,
+            database: Mutex::new(database),
+        }
     }
 
     pub fn health(&self) -> Result<AppHealth, ApplicationError> {
@@ -18,13 +24,19 @@ impl<A: PlatformAdapter> ApplicationService<A> {
             app_name: "dev-storage-manager".to_owned(),
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
             platform: self.adapter.platform(),
-            database_schema_version: self.database.schema_version()?,
+            database_schema_version: self
+                .database
+                .lock()
+                .map_err(|_| ApplicationError::Unavailable)?
+                .schema_version()?,
         })
     }
 }
 
 #[derive(Debug, Error)]
 pub enum ApplicationError {
+    #[error("application state is unavailable")]
+    Unavailable,
     #[error(transparent)]
     Persistence(#[from] PersistenceError),
 }

@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::Arc;
 
 use dev_storage_application::{ApplicationError, ApplicationService};
 use dev_storage_core::AppHealth;
@@ -30,14 +30,9 @@ fn health_payload<A: PlatformAdapter>(
 
 #[tauri::command]
 pub fn get_app_health(
-    state: State<'_, Mutex<ApplicationService<MacOsAdapter>>>,
+    state: State<'_, Arc<ApplicationService<MacOsAdapter>>>,
 ) -> Result<AppHealth, CommandError> {
-    let service = state.lock().map_err(|_| CommandError {
-        code: "application_unavailable",
-        message: "application state is unavailable".to_owned(),
-    })?;
-
-    health_payload(&service)
+    health_payload(state.inner().as_ref())
 }
 
 #[cfg(test)]
@@ -79,5 +74,13 @@ mod tests {
         let service = ApplicationService::new(TestPlatform, Database::open_in_memory().unwrap());
         let payload = health_payload(&service).unwrap();
         assert_eq!(payload.database_schema_version, 2);
+    }
+
+    #[test]
+    fn command_adapter_preserves_unavailable_error_contract() {
+        let error =
+            super::CommandError::from(dev_storage_application::ApplicationError::Unavailable);
+        assert_eq!(error.code, "application_unavailable");
+        assert_eq!(error.message, "application state is unavailable");
     }
 }
