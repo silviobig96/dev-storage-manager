@@ -112,3 +112,12 @@ remains pending. Do not introduce runtime mock modes solely to mark them done.
 
 Human visual approval and CI must pass before merge. Publishing the authorized
 feature branch does not complete Phase 01.5. Phase 02 has not started.
+
+## Publication checkpoint
+
+`git push -u origin codex/phase-01-5-design-foundation` succeeded. A subsequent
+`git ls-remote --heads origin codex/phase-01-5-design-foundation` matched local
+HEAD `f04f953` before this evidence-only record was added. The source and QA
+changes were committed, the normal checkout was clean, and origin was unchanged.
+No PR was opened and no merge or release was performed. The task handoff records
+the final hash after publishing this documentation update as well.
