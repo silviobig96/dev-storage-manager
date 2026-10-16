@@ -605,8 +605,8 @@ Expected: every command exits zero.
 - [x] **Step 5: Commit the responsive and accessible polish**
 
 ```bash
-git add src/styles src/components src/views
-git commit -m "style: refine macOS appearance and accessibility"
+git add src/components/shell/shell.test.tsx docs/superpowers/plans/2026-09-15-phase-01-5-design-foundation.md
+git commit -m "test: verify macOS accessibility foundation"
 ```
 
 ---
@@ -616,13 +616,14 @@ git commit -m "style: refine macOS appearance and accessibility"
 **Files:**
 
 - Modify only if verification exposes a defect in the files already listed.
+- Create: `docs/superpowers/reviews/2026-10-16-phase-01-5-verification.md`
+  to record executed gates and native/browser/human evidence separately.
 
-- [ ] **Step 1: Run the complete functional verification gate**
+- [x] **Step 1: Run the complete functional verification gate**
 
 From the repository root, run:
 
 ```bash
-npm run test:run -- src/lib/desktop.test.ts src/App.test.tsx src/components/ui/ui.test.tsx src/components/shell/shell.test.tsx src/components/content/content.test.tsx src/views/OverviewView.test.tsx
 npm run format:check
 npm run lint
 npm run test:run
@@ -637,7 +638,7 @@ git diff --check
 Expected: every command exits zero and the unsigned local debug application
 bundle is produced.
 
-- [ ] **Step 2: Audit the Phase 01.5 boundary**
+- [x] **Step 2: Audit the Phase 01.5 boundary**
 
 Run:
 
@@ -682,7 +683,7 @@ Confirm the screen contains no hero composition, card grid, decorative
 gradient, giant safety blocks, fake storage totals, dead controls, clipped
 content, or color-only status.
 
-- [ ] **Step 4: Correct defects with focused regression tests**
+- [x] **Step 4: Correct defects with focused regression tests**
 
 For each functional or semantic defect, add a focused failing test before the
 fix and rerun the smallest relevant check. For a purely visual defect, change
@@ -718,7 +719,7 @@ the remote branch hash equals local HEAD. Push only after functional gates and
 scope review pass. Do not force a rejected push, open a PR, merge, or release.
 The push is authorized even while human visual QA remains pending.
 
-- [ ] **Step 6: Report the two QA gates separately**
+- [x] **Step 6: Report the two QA gates separately**
 
 When automated gates pass, report the functional result separately from native
 and browser inspection. List uninspected visual conditions explicitly:
@@ -807,3 +808,17 @@ Phase 02 must not begin as part of this plan.
 - Ruling: Task 6 needed verification and regression coverage, not extra visual
   decoration. Keep the inspected layout and record remaining native checks in
   Task 7 rather than claiming full visual coverage.
+- Task 7: functional verification and source/scope review pass. Final reviewer
+  found one Important WebKit accessibility issue; explicit list semantics fixed
+  with a focused failing regression, then 4/4 focused and 28/28 full frontend
+  tests pass. No critical or deferred minor findings.
+- Final review boundaries: later product functionality and unchanged backend
+  are excluded as requested; human visual acceptance, missing native visual
+  conditions, actual VoiceOver announcements, CI, and remote publication are
+  not inferred from code review. Native pending conditions are documented in
+  `docs/superpowers/reviews/2026-10-16-phase-01-5-verification.md`.
+- Human visual QA remains pending. Task 7 native visual Step 3 and human
+  acceptance Step 7 stay unchecked; Phase 01.5 is not marked complete.
+- Final native debug bundle rebuilt after the accessibility fix. Its native
+  accessibility tree now exposes Safety posture as a content list. VoiceOver
+  speech output is still pending. Production styles/composition are unchanged.

@@ -148,7 +148,7 @@ The command registry contains only `get_app_health`. Phase 01 contains no provid
 
 ## Phase 01.5 presentation boundary
 
-Phase 01.5 is planned to establish the macOS application shell, semantic visual tokens, system-responsive appearances, accessible component primitives, and the redesigned foundation view. It may reorganize the existing React code and continue to display the read-only `get_app_health` result, but it must not expand the Tauri command registry or Rust application behavior.
+Phase 01.5 implements the macOS application shell, semantic visual tokens, system-responsive appearances, accessible component primitives, and the redesigned foundation view. Functional verification passes; human visual QA remains pending, so the phase is not complete. The React reorganization continues to display the read-only `get_app_health` result without expanding the Tauri command registry or Rust application behavior.
 
 The shell reserves an information architecture for Overview, Workspaces, Projects, Categories, History, and Settings without pretending that later-phase routes or data exist. Any future-area label shown during Phase 01.5 is visibly noninteractive and identified as unavailable; mock storage measurements are not presented as analysis results.
 

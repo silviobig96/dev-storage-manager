@@ -198,8 +198,6 @@ Each token has light and dark values. Increased-contrast media queries may
 strengthen separators, selection, and focus without changing meaning. Status
 colors are never reused as generic decoration.
 
-### Appearance behavior
-
 ### Implementation palette
 
 Minor visual values concretized for Phase 01.5 (2026-10-16). These neutral
@@ -229,6 +227,8 @@ Overlay shadow: `0 4px 16px rgb(0 0 0 / 12%)` in light appearance and
 `0 4px 16px rgb(0 0 0 / 28%)` in dark appearance. No foundation surface needs
 that shadow. Increased contrast uses stronger neutral separators (`#81858e`
 light, `#9da2ad` dark), primary secondary-text roles, and a `3px` focus ring.
+
+### Appearance behavior
 
 The default is the operating system appearance through `color-scheme: light
 dark` and `prefers-color-scheme`. Phase 01.5 does not add a persisted appearance

@@ -12,7 +12,7 @@ Define the product, architecture, safety model, provider contract, contribution 
 
 ## Phase 01.5 — macOS Design Foundation
 
-**Planned.** Define and implement the macOS-first visual system before product workflows are added: a sidebar-based application shell, compact desktop hierarchy, semantic design tokens, system-driven light and dark appearances, reusable UI primitives, accessible interaction states, and a redesigned foundation screen. This phase changes presentation only. It retains the existing read-only health query and does not add workspaces, scanning, providers, cleanup, monitoring, networking, telemetry, privileged helpers, Full Disk Access behavior, Windows behavior, or Swift styling helpers.
+**Implemented; human visual QA pending.** The macOS-first visual foundation provides a sidebar-based application shell, compact desktop hierarchy, semantic design tokens, system-driven light and dark appearances, reusable UI primitives, accessible interaction states, and a redesigned foundation screen. Functional verification passes, but the phase is not complete until human visual acceptance. This phase changes presentation only. It retains the existing read-only health query and does not add workspaces, scanning, providers, cleanup, monitoring, networking, telemetry, privileged helpers, Full Disk Access behavior, Windows behavior, or Swift styling helpers.
 
 Phase 01.5 requires both `FUNCTIONAL QA: PASS` and a human `VISUAL QA: PASS`. Automated verification alone cannot complete the phase.
 
