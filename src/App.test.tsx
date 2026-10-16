@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import userEvent from '@testing-library/user-event';
@@ -40,6 +40,42 @@ function deferred<T>() {
 }
 
 describe('App', () => {
+  it('keeps setup reload recovery inside its error without re-enabling uncertain mutations', async () => {
+    vi.mocked(listWorkspaces)
+      .mockResolvedValueOnce({
+        setupState: 'undecided',
+        workspaces: [],
+        overlaps: [],
+      })
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({
+        setupState: 'skipped',
+        workspaces: [],
+        overlaps: [],
+      });
+    vi.mocked(skipWorkspaceSetup).mockRejectedValue(new Error('lost response'));
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Skip for now' }),
+    );
+    const error = screen.getByRole('alert');
+    expect(error).toHaveTextContent('Setup needs attention');
+    const reload = within(error).getByRole('button', {
+      name: 'Reload workspaces',
+    });
+    expect(reload).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Add workspace' }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeDisabled();
+    await userEvent.click(reload);
+    expect(
+      screen.queryByText('Choose workspace folders'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Overview', level: 1 }),
+    ).toBeVisible();
+  });
   beforeEach(() => {
     vi.mocked(getAppHealth).mockReset().mockResolvedValue(health);
     vi.mocked(listWorkspaces).mockReset().mockResolvedValue({

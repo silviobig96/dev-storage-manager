@@ -103,26 +103,24 @@ function App() {
           setup={
             workspaces.state.status === 'ready' &&
             workspaces.state.listing.setupState === 'undecided' && (
-              <>
-                <WorkspaceSetup
-                  adding={
-                    workspaces.adding || !!workspaces.error?.requiresReload
-                  }
-                  error={workspaces.error}
-                  onAdd={addFromSetup}
-                  onSkip={() => workspaces.skip()}
-                  focusGeneration={navigationGeneration}
-                />
-                {workspaces.error?.requiresReload && (
-                  <Button
-                    onClick={() => {
-                      void workspaces.reload().catch(() => undefined);
-                    }}
-                  >
-                    Reload workspaces
-                  </Button>
-                )}
-              </>
+              <WorkspaceSetup
+                adding={workspaces.adding || !!workspaces.error?.requiresReload}
+                error={workspaces.error}
+                onAdd={addFromSetup}
+                onSkip={() => workspaces.skip()}
+                focusGeneration={navigationGeneration}
+                recoveryAction={
+                  workspaces.error?.requiresReload && (
+                    <Button
+                      onClick={() => {
+                        void workspaces.reload().catch(() => undefined);
+                      }}
+                    >
+                      Reload workspaces
+                    </Button>
+                  )
+                }
+              />
             )
           }
         />

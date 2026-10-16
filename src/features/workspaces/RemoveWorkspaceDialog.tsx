@@ -54,7 +54,17 @@ export function RemoveWorkspaceDialog({
         <p>Files on disk will not be deleted.</p>
       </div>
       {error && (
-        <FeedbackMessage tone="error" title="Removal needs attention">
+        <FeedbackMessage
+          tone="error"
+          title="Removal needs attention"
+          action={
+            requiresReload && (
+              <Button disabled={busy} onClick={onReload}>
+                Reload workspaces
+              </Button>
+            )
+          }
+        >
           {error.message}
         </FeedbackMessage>
       )}
@@ -62,11 +72,6 @@ export function RemoveWorkspaceDialog({
         <Button ref={cancel} disabled={busy} onClick={onCancel}>
           Cancel
         </Button>
-        {requiresReload && (
-          <Button disabled={busy} onClick={onReload}>
-            Reload workspaces
-          </Button>
-        )}
         <Button
           disabled={busy || requiresReload}
           onClick={() => onConfirm(workspace.id)}

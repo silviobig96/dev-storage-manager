@@ -111,6 +111,12 @@ describe('Workspaces view', () => {
       'aria-atomic',
       'true',
     );
+    expect(available.closest('[aria-live]')).toHaveTextContent(
+      first.displayName,
+    );
+    expect(available.closest('[aria-live]')).toHaveTextContent(
+      first.selectedPath,
+    );
     expect(screen.getByText('Contents have not been checked.')).toBeVisible();
     expect(
       screen.queryByText('Folder availability checked.'),
@@ -531,6 +537,12 @@ describe('Workspaces view', () => {
     expect(
       within(screen.getByRole('dialog')).getByRole('alert'),
     ).toHaveTextContent('Reload workspaces before trying again.');
+    expect(
+      within(within(screen.getByRole('dialog')).getByRole('alert')).getByRole(
+        'button',
+        { name: 'Reload workspaces' },
+      ),
+    ).toBeEnabled();
     expect(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Remove workspace',

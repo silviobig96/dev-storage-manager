@@ -50,6 +50,10 @@
 .workspace-overlap {
   margin-block-start: var(--space-4);
 }
+/* Only the screen-reader identity is clipped; visible paths and panes still wrap/scroll. */
+.workspace-availability > .visually-hidden {
+  overflow: hidden;
+}
 .workspace-feedback-error,
 .workspace-announcement:not(:empty) {
   margin-block-end: var(--space-6);

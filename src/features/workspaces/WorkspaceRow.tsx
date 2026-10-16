@@ -85,6 +85,7 @@ export function WorkspaceRow({
             aria-live="polite"
             aria-atomic="true"
           >
+            <span className="visually-hidden">{identity}: </span>
             <FeedbackMessage
               tone={meaning.tone}
               title={meaning.title}

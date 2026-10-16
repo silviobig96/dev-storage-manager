@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Section } from '../../components/content/Section';
 import { Button } from '../../components/ui/Button';
 import { FeedbackMessage } from '../../components/ui/FeedbackMessage';
@@ -10,12 +10,14 @@ export function WorkspaceSetup({
   onAdd,
   onSkip,
   focusGeneration = 0,
+  recoveryAction,
 }: {
   adding: boolean;
   error: Error | null;
   onAdd: () => unknown;
   onSkip: () => unknown;
   focusGeneration?: number;
+  recoveryAction?: ReactNode;
 }) {
   const pending = useRef(false);
   const invoker = useRef<HTMLElement | null>(null);
@@ -69,7 +71,11 @@ export function WorkspaceSetup({
           </Button>
         </div>
         {error && (
-          <FeedbackMessage tone="error" title="Setup needs attention">
+          <FeedbackMessage
+            tone="error"
+            title="Setup needs attention"
+            action={recoveryAction}
+          >
             {error.message}
           </FeedbackMessage>
         )}
