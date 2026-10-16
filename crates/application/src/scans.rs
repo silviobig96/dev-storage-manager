@@ -320,18 +320,26 @@ fn live_fits(snapshot: &ScanSnapshot) -> bool {
     if !fits(snapshot, false) {
         return false;
     }
-    let mut reserve = snapshot.clone();
-    reserve.revision = DecimalQuantity(u64::MAX);
-    stopped(&mut reserve, StopReason::QuantityOverflow);
-    if !fits(&reserve, false) {
-        return false;
+    // QuantityOverflow is the longest budget-stop reason. Cancellation has a
+    // shorter reason, but its per-workspace "cancelled" state is longer than
+    // "partial", so neither envelope bounds the other for every root count.
+    for reason in [StopReason::QuantityOverflow, StopReason::Cancelled] {
+        let mut reserve = snapshot.clone();
+        reserve.revision = DecimalQuantity(u64::MAX);
+        stopped(&mut reserve, reason);
+        if !fits(&reserve, false) {
+            return false;
+        }
+        reserve.state = ScanState::Cancelled;
+        reserve.finished_at = Some(DecimalQuantity(u64::MAX));
+        reserve.worker_active = false;
+        reserve.failure = Some(failure(ScanErrorCode::ApplicationUnavailable));
+        terminal_diagnostic(&mut reserve, reason);
+        if !fits(&reserve, true) {
+            return false;
+        }
     }
-    reserve.state = ScanState::Cancelled;
-    reserve.finished_at = Some(DecimalQuantity(u64::MAX));
-    reserve.worker_active = false;
-    reserve.failure = Some(failure(ScanErrorCode::ApplicationUnavailable));
-    terminal_diagnostic(&mut reserve, StopReason::QuantityOverflow);
-    fits(&reserve, true)
+    true
 }
 fn replace_progress(candidate: &mut ScanSnapshot, progress: ScanProgress) -> bool {
     let limits = ScanLimits::for_mode(candidate.mode);

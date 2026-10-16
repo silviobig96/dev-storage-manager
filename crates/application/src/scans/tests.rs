@@ -961,3 +961,249 @@ fn scan_lifecycle_explicit_shutdown_is_idempotent_and_retains_live_lease() {
         before
     );
 }
+
+// Build a controlled 32-row envelope. Padding is sized with the independent full
+// JSON serializer, never the production size/reservation helpers under test.
+fn multi_root_envelope(
+    mut base: ScanSnapshot,
+    roots: &[StoredWorkspace],
+    bytes: usize,
+    revision: u64,
+) -> ScanSnapshot {
+    let mut update = progress(roots);
+    update.coverage = Coverage::Partial;
+    update.metrics.logical_coverage = Coverage::Partial;
+    update.metrics.allocated_coverage = Coverage::Partial;
+    update.metrics.unmeasured_bytes = None;
+    for row in &mut update.workspaces {
+        row.state = WorkspaceScanState::Running;
+        row.coverage = Coverage::Partial;
+        row.metrics = Some(update.metrics.clone());
+    }
+    base.workspaces = update.workspaces;
+    base.metrics = update.metrics;
+    base.coverage = update.coverage;
+    base.entry_attempts = update.entry_attempts;
+    base.state = ScanState::Running;
+    base.revision = DecimalQuantity(revision);
+    let padding = bytes
+        .checked_sub(serde_json::to_vec(&base).unwrap().len())
+        .unwrap();
+    base.workspaces[0]
+        .selected_path
+        .push_str(&"x".repeat(padding));
+    assert_eq!(serde_json::to_vec(&base).unwrap().len(), bytes);
+    base
+}
+
+fn envelope_progress(snapshot: ScanSnapshot) -> ScanProgress {
+    ScanProgress {
+        workspaces: snapshot.workspaces,
+        metrics: snapshot.metrics,
+        coverage: snapshot.coverage,
+        diagnostics: snapshot.diagnostics,
+        entry_attempts: snapshot.entry_attempts,
+    }
+}
+
+// Catches the old QuantityOverflow-only reserve admitting an envelope whose
+// immediate cancel acknowledgement exceeds the immutable ordinary-snapshot cap.
+#[test]
+fn scan_cancellation_reserve_rejects_unsafe_multi_root_publication() {
+    let (seed_tx, seed_rx) = mpsc::channel::<ScanSnapshot>();
+    let seed_rx = Mutex::new(seed_rx);
+    let (observed_tx, observed) = mpsc::channel();
+    let (release, held) = mpsc::channel();
+    let held = Mutex::new(held);
+    let service = scripted(move |roots, _, publish| {
+        let base = seed_rx
+            .lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+        publish(progress(&roots));
+        let unsafe_snapshot = multi_root_envelope(base, &roots, 126_941, 3);
+        let mut old_reserve = unsafe_snapshot.clone();
+        old_reserve.revision = DecimalQuantity(u64::MAX);
+        old_reserve.state = ScanState::Stopping;
+        old_reserve.stop_reason = Some(StopReason::QuantityOverflow);
+        for row in &mut old_reserve.workspaces {
+            row.state = WorkspaceScanState::Partial;
+        }
+        assert_eq!(serde_json::to_vec(&old_reserve).unwrap().len(), 126_976);
+        let mut cancellation = unsafe_snapshot.clone();
+        cancellation.revision = DecimalQuantity(4);
+        cancellation.state = ScanState::Cancelling;
+        cancellation.stop_reason = Some(StopReason::Cancelled);
+        for row in &mut cancellation.workspaces {
+            row.state = WorkspaceScanState::Cancelled;
+        }
+        assert_eq!(serde_json::to_vec(&cancellation).unwrap().len(), 127_015);
+        println!(
+            "unsafe bytes: running=126941 old_max_revision_reserve=126976 cancellation=127015"
+        );
+        publish(envelope_progress(unsafe_snapshot.clone()));
+        observed_tx.send(()).unwrap();
+        held.lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+        ScanReport {
+            progress: envelope_progress(unsafe_snapshot),
+            state: ScanState::Completed,
+            stop_reason: None,
+            failure: None,
+        }
+    });
+    let ids = (0..32)
+        .map(|index| add(&service, &format!("/fixture/{index}")))
+        .collect();
+    let accepted = service.start_scan(request(&service, ids, 1)).unwrap();
+    seed_tx.send(accepted.clone()).unwrap();
+    observed.recv_timeout(Duration::from_secs(5)).unwrap();
+    let stopped = service.current_scan().unwrap().session.unwrap();
+    assert_eq!(stopped.state, ScanState::Stopping);
+    assert_eq!(stopped.stop_reason, Some(StopReason::ResultLimit));
+    assert_eq!(stopped.workspaces[0].selected_path, "/fixture/0");
+    assert_eq!(stopped.metrics.observed_logical_bytes, DecimalQuantity(3));
+    assert_eq!(stopped.entry_attempts, DecimalQuantity(2));
+    assert!(stopped.worker_active);
+    assert_eq!(service.cancel_scan(&accepted.session_id).unwrap(), stopped);
+    release.send(()).unwrap();
+    let terminal = wait_scan(&service);
+    assert_eq!(terminal.state, ScanState::Partial);
+    assert_eq!(terminal.stop_reason, Some(StopReason::ResultLimit));
+    assert_eq!(terminal.workspaces[0].selected_path, "/fixture/0");
+    assert_eq!(terminal.metrics.observed_logical_bytes, DecimalQuantity(3));
+}
+
+// Catches an off-by-one reserve, any unsupported active-stop/terminal shape, and
+// delayed cancellation acknowledgement or early lease release at the exact cap.
+#[test]
+fn scan_cancellation_reserve_exact_safe_envelope_acknowledges_while_blocked() {
+    let (seed_tx, seed_rx) = mpsc::channel::<ScanSnapshot>();
+    let seed_rx = Mutex::new(seed_rx);
+    let (observed_tx, observed) = mpsc::channel();
+    let (release, held) = mpsc::channel();
+    let held = Mutex::new(held);
+    let service = scripted(move |roots, _, publish| {
+        let base = seed_rx
+            .lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+        // u64::MAX has 20 decimal digits, 19 more than this one-digit revision.
+        let safe = multi_root_envelope(base, &roots, 126_883, 2);
+        assert!(live_fits(&safe));
+        let mut over = safe.clone();
+        over.workspaces[0].selected_path.push('x');
+        assert!(
+            !live_fits(&over),
+            "one byte beyond the cancellation reserve must reject"
+        );
+        for reason in [
+            StopReason::TimeBudget,
+            StopReason::EntryLimit,
+            StopReason::IdentityLimit,
+            StopReason::DescriptorLimit,
+            StopReason::DiagnosticLimit,
+            StopReason::ResultLimit,
+            StopReason::QuantityOverflow,
+            StopReason::Cancelled,
+        ] {
+            let mut stopped = safe.clone();
+            stopped.revision = DecimalQuantity(u64::MAX);
+            stopped.stop_reason = Some(reason);
+            stopped.state = if reason == StopReason::Cancelled {
+                ScanState::Cancelling
+            } else {
+                ScanState::Stopping
+            };
+            for row in &mut stopped.workspaces {
+                row.state = if reason == StopReason::Cancelled {
+                    WorkspaceScanState::Cancelled
+                } else {
+                    WorkspaceScanState::Partial
+                };
+            }
+            let active_bytes = serde_json::to_vec(&stopped).unwrap().len();
+            assert!(active_bytes <= 126_976, "{reason:?}: {active_bytes}");
+            if reason == StopReason::Cancelled {
+                assert_eq!(active_bytes, 126_976);
+            }
+            stopped.state = if reason == StopReason::Cancelled {
+                ScanState::Cancelled
+            } else {
+                ScanState::Partial
+            };
+            stopped.worker_active = false;
+            stopped.finished_at = Some(DecimalQuantity(u64::MAX));
+            stopped.failure = Some(failure(ScanErrorCode::ApplicationUnavailable));
+            stopped.diagnostics.push(ScanDiagnostic {
+                workspace_id: None,
+                code: reason.into(),
+                severity: DiagnosticSeverity::Warning,
+                count: DecimalQuantity(1),
+            });
+            let terminal_bytes = serde_json::to_vec(&stopped).unwrap().len();
+            assert!(terminal_bytes <= 131_072, "{reason:?}: {terminal_bytes}");
+            println!("safe stop {reason:?}: max_revision_active={active_bytes} max_time_terminal={terminal_bytes}");
+        }
+        publish(envelope_progress(safe.clone()));
+        observed_tx.send(()).unwrap();
+        held.lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+        ScanReport {
+            progress: envelope_progress(safe),
+            state: ScanState::Completed,
+            stop_reason: None,
+            failure: None,
+        }
+    });
+    let ids: Vec<_> = (0..32)
+        .map(|index| add(&service, &format!("/fixture/{index}")))
+        .collect();
+    let first_id = ids[0];
+    let accepted = service.start_scan(request(&service, ids, 1)).unwrap();
+    seed_tx.send(accepted.clone()).unwrap();
+    observed.recv_timeout(Duration::from_secs(5)).unwrap();
+    let running = service.current_scan().unwrap().session.unwrap();
+    assert_eq!(running.state, ScanState::Running);
+    assert_eq!(serde_json::to_vec(&running).unwrap().len(), 126_883);
+    let cancelling = service.cancel_scan(&accepted.session_id).unwrap();
+    assert_eq!(cancelling.state, ScanState::Cancelling);
+    assert_eq!(cancelling.stop_reason, Some(StopReason::Cancelled));
+    assert!(cancelling
+        .workspaces
+        .iter()
+        .all(|row| row.state == WorkspaceScanState::Cancelled));
+    assert_eq!(
+        cancelling.workspaces[0].selected_path,
+        running.workspaces[0].selected_path
+    );
+    assert_eq!(
+        cancelling.metrics.observed_logical_bytes,
+        DecimalQuantity(3)
+    );
+    assert_eq!(cancelling.entry_attempts, DecimalQuantity(2));
+    assert!(cancelling.worker_active);
+    assert!(cancelling.finished_at.is_none());
+    assert_eq!(serde_json::to_vec(&cancelling).unwrap().len(), 126_957);
+    assert_eq!(
+        service.remove_workspace(first_id).unwrap_err().code,
+        WorkspaceErrorCode::ScanInProgress
+    );
+    release.send(()).unwrap();
+    let terminal = wait_scan(&service);
+    assert_eq!(terminal.state, ScanState::Cancelled);
+    assert!(!terminal.worker_active);
+    assert_eq!(
+        terminal.workspaces[0].selected_path,
+        running.workspaces[0].selected_path
+    );
+    assert_eq!(terminal.entry_attempts, DecimalQuantity(2));
+    assert!(serde_json::to_vec(&terminal).unwrap().len() <= 131_072);
+    assert!(service.reserve_workspace_change().is_ok());
+}
