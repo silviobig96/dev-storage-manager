@@ -22,7 +22,7 @@ workspace scan, release or Phase 04 feature is authorized.
 | Checkpoint                           | Tasks | Status                               |
 | ------------------------------------ | ----- | ------------------------------------ |
 | Isolated native verification         | 1     | Implemented; reviewed receipts below |
-| Contracts, policy and fixture engine | 2–5   | Tasks 2–3 verified; 4–5 not executed |
+| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
 | Gated application/IPC/minimal UI     | 6–10  | Not executed                         |
 | Functional/native/human acceptance   | 11    | Not executed                         |
 
@@ -239,3 +239,112 @@ this is recorded for whole-branch review, not silently dropped. The 36-descripto
 session cap still needs Task 5 enforcement; the adapter proves one descriptor per
 frame, not concurrency control. Production home discovery remains unexercised
 at this checkpoint and will be distinguished from the later native runner tests.
+
+## Task 4 — bounded unique-object accounting
+
+Implementation commit `eea6a8c`, independently reviewed with no findings. Pure core
+accounting and diagnostics; no new production dependency or filesystem call.
+Actual 64-byte identity slots retain first owner and bounded dependent-root bits;
+directory pending/partial coverage cannot be upgraded merely by deduplicating.
+All candidate identity, ownership and metric changes are checked before commit.
+Unknown allocation retains usable logical measurements with overall partial
+coverage; all-unknown allocation is null/unavailable, while an observed empty
+set is known zero/complete. This resolves the spec's ambiguous overall wording.
+
+Observed TDD: compiling accounting stubs failed four behavioral tests; pending
+directory/unsupported-scope regressions then failed two before correction.
+Diagnostics stubs failed two; grouping and terminal-count overflow each had a
+subsequent observed failure before passing. Final task commands:
+
+- `cargo test -p dev-storage-core scan_accounting --locked`: 6 passed.
+- `cargo test -p dev-storage-core scan_diagnostics --locked`: 3 passed.
+- `cargo test --workspace --locked`: 86 passed (application 6, core 23, Tauri 12,
+  persistence 19, platform 26), doc-tests passed. This is a checkpoint run,
+  not final verification of unimplemented Tasks 5–11.
+- `cargo clippy -p dev-storage-core --all-targets --locked -- -D warnings`:
+  exit 0, no warnings.
+- `rustfmt --check --edition 2021 crates/core/src/scanner/accounting.rs crates/core/src/scanner/diagnostics.rs`
+  and `git diff --check`: exit 0.
+
+Synthetic cases cover hard-link exclusive 12/0 versus global 12, distinct-volume
+identity, capacity exhaustion without forgetting duplicates, overflow rollback
+and retry, pending/partial directory inheritance and allocation uncertainty.
+Diagnostics retain at most 127 ordinary groups plus one reserved terminal group,
+checked decimal counts and no child paths. Actual encoded DTO tests exercise the
+128 KiB boundary with a 4 KiB terminal reserve. The size guard requires its future
+publisher to measure and check the full JSON-encoded DTO; that integration is
+not established by this helper. Root-order normalization remains Task 5;
+checked native blocks × 512 was already verified in Task 3.
+
+## Task 5 — streaming engine
+
+Implementation commit `6294d8a` plus fix `4c6da52`; independent review and scoped
+re-review passed after the allocation-coverage correction below. No application
+service, IPC, native-runner hookup, UI or dependency change. New tests are purely
+synthetic metadata cursors; existing platform unit fixtures running in the Rust
+suite are not executions of the opt-in native-acceptance target.
+
+Actual final commands reported:
+
+- `cargo test --workspace --locked`: 100 passed (application 6, core 37,
+  Tauri 12, persistence 19, platform 26); doc-tests passed.
+- `cargo clippy -p dev-storage-core --all-targets --locked -- -D warnings`:
+  exit 0, no warnings.
+- `rustfmt --check --edition 2021 crates/core/src/scanner/engine.rs crates/core/src/scanner/tests.rs`
+  and `git diff --check`: exit 0.
+
+Initial compiling stubs produced 1 then 6 failed engine tests before GREEN.
+Further observed RED→GREEN regressions covered the wire progress field,
+verification of the entire active ancestor chain, cancel from the final callback
+and exact known-omission lower bounds. Scope validation extended already-present
+behavior, without claiming a separate preceding failure. Focused commands were
+`cargo test -p dev-storage-core scan_ --locked`, plus filters
+`scan_cancel_at_final`, `scan_cancel`, `scan_limits_and_partial` and
+`scan_scope_validation` during those cycles.
+
+Synthetic observations include known empty zero, 3 + 5 = 8 bytes, nested exclusive
+8/0, stable complete totals across enumeration permutations, later duplicates
+inheriting depth-partial coverage, 32 roots with peak 3 descriptors and a Deep
+chain with peak 33. A blocked call retains its live cursor until released after
+cancel; only then may the engine return. There is no service gate yet.
+1,000 files plus EOF produce 1,001 cursor requests and at most 3 stationary-clock
+publications. These are not real filesystem performance measurements.
+
+`entryAttempts` counts issued cursor requests, including EOF/failure/stop, under
+unchanged numeric budgets. The UI label will be “Traversal checks attempted”,
+not an exact measured-object count. A diagnostic conservatively ends that cursor
+branch partial; ancestor siblings/other roots remain eligible. Unknown stream
+omissions have lower bound 0; a known skipped subtree/entry can contribute 1.
+Entry, identity, descriptor, time, diagnostic, quantity, result and cancel stops
+retain honest prefixes; depth remains a branch skip. Counter publications are
+throttled; no queue of per-entry events or descendant-path catalogue is retained.
+
+The report is a terminal candidate after cursor cleanup, not an IPC terminal
+publication. Service Tasks 6–7 still must linearize cancellation/finalization,
+retain the work reservation and enforce full actual encoded root/snapshot sizes.
+
+Independent review identified a required correction: directory finalization
+recorded logical omissions but lost allocation-only uncertainty. A later
+workspace deduplicating that directory could therefore claim complete coverage
+and known zero allocation even though its subtree's allocation was unknown.
+The original global/first-root metrics remained partial, but the later root was
+incorrect. The fix must retain separate logical/allocated directory coverage and
+add nested all-unknown/mixed-allocation regressions; marking logical traversal
+partial solely for unknown allocation is not an acceptable fix. Task 5 remains
+was kept open until the correction and scoped independent re-review passed.
+
+Correction `4c6da52` stores an allocation-uncertainty bit within existing slot
+padding and propagates it separately through active ancestors, direct-file
+duplicates and later directory duplicates. Logical coverage stays complete when
+only allocation is unknown. A nested all-unknown/mixed matrix first reproduced
+Completed versus required Partial, then passed after the fix; a sticky directory
+finalization test prevents a later finish from upgrading unknown allocation.
+Actual 64-byte slots and all capacities remain unchanged. Scoped re-review
+confirmed the finding addressed with no new breakage.
+
+Current amended-source commands: `cargo test -p dev-storage-core scan_ --locked`
+passed 36 tests; core Clippy with all targets/locked/deny warnings, scoped rustfmt
+and diff checks passed. The earlier 100-test workspace result belongs to
+`6294d8a`, not the fix; it was not redundantly rerun here. Final consolidated
+verification remains Task 11. Checkpoint 2 is implemented/reviewed with these
+precisely scoped receipts, not a whole-phase functional or native UI PASS.

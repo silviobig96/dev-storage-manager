@@ -274,11 +274,11 @@ unbounded collections or loss of dedup at capacity. Owner order is supplied by
 engine, not arbitrary worker completion. Grouped diagnostics use a reserved
 overflow slot within the total limit of 128.
 
-- [ ] Write `scan_accounting_deduplicates`: two root IDs 7 and 9 share a 12-byte
+- [x] Write `scan_accounting_deduplicates`: two root IDs 7 and 9 share a 12-byte
       hard-linked file; exclusive contributions 12/0, global 12 and coveredBy=7,
       not 24. Same inode on different volume UUIDs contributes 24. Reversed input
       selection normalizes before observation; repeated directory has one visit.
-- [ ] Write `scan_accounting_bounds`: small injected table capacity 2 then third
+- [x] Write `scan_accounting_bounds`: small injected table capacity 2 then third
       unique object produces identity_limit, preserves exact first two totals;
       actual slot size 64 bytes, capacities/bytes equal spec. Addition near
       u64::MAX and blocks ×512 overflow return quantity_overflow without wrapping.
@@ -289,21 +289,27 @@ overflow slot within the total limit of 128.
       Assert logicalCoverage remains complete_within_policy while
       allocatedCoverage/overall coverage are partial; all-unknown allocation is
       null/unavailable, not a zero-byte total.
-- [ ] Write `scan_diagnostics_bound`: 127 ordinary groups plus reserved stop
+- [x] Write `scan_diagnostics_bound`: 127 ordinary groups plus reserved stop
       group; the next new group stops diagnostic_limit, repeated code increments
       its decimal count, no path samples appear. A 128 KiB result boundary
       reserves terminal data, returns result_limit, never a truncated complete DTO.
-- [ ] Run `cargo test -p dev-storage-core scan_accounting --locked` and
+- [x] Run `cargo test -p dev-storage-core scan_accounting --locked` and
       `cargo test -p dev-storage-core scan_diagnostics --locked` RED/GREEN around
       implementation. Commit `feat: account for bounded unique scan observations`.
 
 **Exit:** Metrics are observations, not reclaimability; resource limits cannot
 turn duplicate objects into a silently overcounted exact result.
 
+Execution receipt: `eea6a8c`, independently reviewed. Request-order normalization
+and ancestor propagation belong to Task 5; full actual serialized-size checks
+before publication remain service/IPC integration requirements. The guard alone
+does not establish end-to-end payload enforcement.
+
 ## Task 5: Drive streaming traversal, coverage and cooperative stop in core
 
 **Files:** Core scanner `engine.rs`, reusable synthetic fixtures in
-`crates/core/src/scanner/tests.rs` (cfg(test) only), module exports.
+`crates/core/src/scanner/tests.rs` (cfg(test) only), module exports and the narrow
+`ScanSnapshot.entryAttempts` decimal progress field in `model.rs` with its JSON test.
 
 **Interfaces:** `ScanControl` holds cancellation/deadline state and an injected
 monotonic clock. `scan(roots: Vec<StoredWorkspace>, mode: ScanMode,
@@ -311,36 +317,46 @@ fs: &dyn ScanFilesystem, control: &ScanControl,
 publish: &mut dyn FnMut(ScanProgress)) -> ScanReport`. Native cursor follows
 Task 3 traits; fake cursor records every operation. Publication is bounded
 state replacement, not queueing every entry or exporting paths.
+Each issued next_entry call conservatively consumes one attempt, including EOF
+or failure; UI labels the counter “Traversal checks attempted”, not objects
+measured. A diagnostic abandons that cursor partial without retry; ancestor
+siblings/other roots remain eligible. Numeric budgets do not change.
 
-- [ ] Write `scan_empty_and_multiple_roots`: empty directory produces measured
+- [x] Write `scan_empty_and_multiple_roots`: empty directory produces measured
       "0"/complete_within_policy; two roots' deterministic 3+5-byte regular files
       total "8". Snapshot configuration with no requested roots is rejected by
       service, not treated as an empty directory. Names .git/node_modules/hidden
       contribute like ordinary metadata. Forbidden content/mutation counters 0.
-- [ ] Write `scan_nesting_and_order`: parent/child and hard links with IDs
+- [x] Write `scan_nesting_and_order`: parent/child and hard links with IDs
       reversed in request produce identical exclusive attribution and global
       totals; child covered by parent is explicit, not an independent total.
       Disabled/unrequested child is not a parent-tree exclusion. Directory
       enumeration permutations preserve complete stationary totals/ownership.
       A later root deduplicating an earlier partial directory inherits partial
       coverage, including when the first root exhausted its depth budget.
-- [ ] Write `scan_limits_and_partial`: inject depth 1, entry 2, identity 2, FD
+- [x] Write `scan_limits_and_partial`: inject depth 1, entry 2, identity 2, FD
       limit and deadline clocks. Assert exact stop/skip reason, live descriptors
       never exceed cap, no frontier/full-tree growth, unmeasured bytes null for
       unknown subtrees. Known policy exclusions stay counted in declared scope;
       inaccessible/disappeared/changed/cloud/unknown allocation is partial.
-- [ ] Write `scan_cancel_and_errors`: cancel before next call permits no new
+- [x] Write `scan_cancel_and_errors`: cancel before next call permits no new
       cursor work, retains observations; a barrier-blocked call cannot report
       completion until released. Mixed valid/invalid roots retain valid metrics;
       no usable root finishes error. Verify parent link before resuming a child,
       directory finish drift, stream iteration failure and panic sanitation path.
-- [ ] Run `cargo test -p dev-storage-core scan_ --locked` RED/GREEN; implement
+- [x] Run `cargo test -p dev-storage-core scan_ --locked` RED/GREEN; implement
       one-root-at-a-time anchoring and streaming DFS. Close each root/cursor stack
       before opening the next root so 32 roots never add 32 retained root FDs.
       Commit `feat: traverse bounded scan scopes with honest coverage`.
 
 **Exit:** Engine is independently testable with synthetic filesystem operations;
 native implementation still not exposed through IPC.
+
+Execution receipt: `6294d8a` plus reviewed correction `4c6da52`. Nested directory
+deduplication now retains allocation uncertainty independently from logical
+coverage. The verification record distinguishes the initial workspace-suite run
+from focused checks on the amended source. Service/IPC size and lifecycle gates
+remain Tasks 6–7; no production native runner is connected by this checkpoint.
 
 ## Task 6: Coordinate owned sessions and configuration changes in application
 

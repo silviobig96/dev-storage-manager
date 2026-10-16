@@ -363,8 +363,13 @@ identity marked accounted with inconsistent totals or claim complete coverage.
 have unknown extent (otherwise "0"). No estimate of the number/bytes beneath an
 unreadable directory is invented. Each ScanMetrics carries `logicalCoverage` and
 `allocatedCoverage`; each root/session also has overall `coverage`. Their values
-are complete_within_policy, partial or unavailable. Overall coverage cannot be
-more complete than either applicable metric. Fixed policy exclusions (links, mount crossings, special files)
+are complete_within_policy, partial or unavailable. Overall is complete only
+when both applicable metrics are complete; it is unavailable when no usable
+root measurement exists. If logical observations are usable but every file's
+allocation is unknown, logical coverage can be complete, allocated coverage is
+unavailable with a null allocated subtotal, and overall coverage is partial.
+An observed empty set has known zero allocation, not unavailable allocation.
+Fixed policy exclusions (links, mount crossings, special files)
 are counted and declared even in complete_within_policy. Resource skips,
 unreadable/changed/cloud directories, missing metrics or cancellation mark the
 affected metric/root partial; results must never be titled exact workspace total.
@@ -383,6 +388,16 @@ affected metric/root partial; results must never be titled exact workspace total
 | Fixed identity-table storage                    | 65,536 × 64-byte slots (4 MiB)  | 524,288 × 64-byte slots (32 MiB) |
 | Diagnostic groups / retained child-path samples | 128 / 0                         | 128 / 0                          |
 | Snapshot IPC size / query interval              | At most 128 KiB / 250 ms        | Same                             |
+
+Implementation counting clarification: the entry-attempt budget conservatively
+charges every issued `next_entry` cursor request, including EOF or a failed/
+stopped request. It upper-bounds descendant metadata-entry attempts; it is not
+an exact count of objects measured or native syscalls. Root anchoring is bounded
+separately by requested-root, descriptor and elapsed limits. The current cursor
+does not promise resumability after a metadata/stream diagnostic: abandon that
+directory branch partial, retain ancestor siblings and other roots, and do not
+retry a replacement. These conservative choices may reduce coverage; they do
+not widen either mode's numeric budget or conceal omitted entries.
 
 These are conservative initial proposals, not benchmarked performance claims.
 DFS streams entries with no frontier vector or complete directory listing; at
@@ -482,7 +497,7 @@ Its original accepted payload/expectedEpoch still replays while its own gate is
 occupied; only other requests and evicted stale replays use those rejections.
 
 Snapshot includes sessionId, requestId, epoch, mode, state, decimal revision,
-startedAt/finishedAt, workerActive, nullable stopReason, sorted workspace rows
+startedAt/finishedAt, decimal entryAttempts, workerActive, nullable stopReason, sorted workspace rows
 (workspace ID, original display name/path, state, metrics, coverage and known
 coveredBy IDs), global metrics/coverage/protection and grouped diagnostics.
 No raw file identities, paths beneath roots, file findings or arbitrary errors.
@@ -532,8 +547,9 @@ and coverage separately from root Availability; no per-row start button or new
 selection system. Overview replaces only its truthful scan EmptyState with the
 same session summary when data exists, retaining full structural width/health.
 No active roots: “No enabled workspace folders. Add or enable a workspace to scan.”
-No progress denominator: “Scanning… 1,234 entries checked”, never invented percent
-or ETA. Stopping: “Waiting for a filesystem operation to finish. No new scan can
+No progress denominator: show “Scanning…” and “Traversal checks attempted: 1,234”
+from entryAttempts, never an invented object count, percent or ETA.
+Stopping: “Waiting for a filesystem operation to finish. No new scan can
 start yet.” Coverage copy derives from actual diagnostics and may combine:
 
 - Limits: “Partial measurement — traversal stopped at a scan limit.” Name the
