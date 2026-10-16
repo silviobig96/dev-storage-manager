@@ -29,10 +29,16 @@ fn health_payload<A: PlatformAdapter>(
 }
 
 #[tauri::command]
-pub fn get_app_health(
+pub async fn get_app_health<R: tauri::Runtime>(
+    webview: tauri::Webview<R>,
     state: State<'_, Arc<ApplicationService<MacOsAdapter>>>,
 ) -> Result<AppHealth, CommandError> {
-    health_payload(state.inner().as_ref())
+    crate::workspaces::ensure_main(&webview)
+        .map_err(|_| CommandError::from(ApplicationError::Unavailable))?;
+    let service = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || health_payload(service.as_ref()))
+        .await
+        .map_err(|_| CommandError::from(ApplicationError::Unavailable))?
 }
 
 #[cfg(test)]
