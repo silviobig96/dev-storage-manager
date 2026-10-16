@@ -638,7 +638,7 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
       Workspaces. Without it record HUMAN VISUAL QA: AWAITING HUMAN REVIEW.
       No inherited temporary exception automatically extends to Phase 03; do not
       accept this UI phase with P02 layout/zoom unresolved. Record blockers honestly.
-- [ ] Commit scoped evidence `docs: record scanner core verification`; publish
+- [x] Commit scoped evidence `docs: record scanner core verification`; publish
       only if the current execution task authorizes this feature branch, verify
       remote HEAD and clean checkout. No automatic PR/merge/release.
 
@@ -661,8 +661,10 @@ P02 tracked geometry/zoom/ACL obligations have new resolution evidence.
 The human confirmed current native 200% keyboard access to Quick/Deep and row
 actions, full-path scrolling and Escape/Cancel with usable focus return; the
 held case exited 0 and restored native zoom 1.0. This is not a full modal-input
-or visual approval. Remaining native input/accessibility, explicit Phase 03
-human visual approval and publication keep the corresponding boxes unchecked.
+or visual approval. Remaining native input/accessibility and explicit Phase 03
+human visual approval keep the corresponding boxes unchecked. Evidence was
+committed and the authorized feature branch published through `14dc6c2`, with
+remote HEAD equality and a clean checkout verified. Publication is not acceptance.
 VoiceOver is NOT REPEATED AT HUMAN REQUEST, not PASS; contrast/motion changes
 are unauthorized/unperformed. No Phase 02 acceptance exception is inherited.
 

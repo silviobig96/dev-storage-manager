@@ -1040,3 +1040,21 @@ review. No screenshot pixel dimensions were used as CSS measurements.
 This resolves the normal-bundle smoke gap, not real-pointer Quick/Deep UI
 activation, every modal keyboard criterion, contrast/reduced motion or human
 visual approval. HUMAN VISUAL QA remains AWAITING HUMAN REVIEW.
+
+### Documentation and publication receipt
+
+After the source/native checks, `npm run format:check`, `git diff --check` and
+`git diff --check 04018df HEAD` exited 0. A read-only Node check validated 51 local
+Markdown links/anchors across seven phase/architecture/roadmap documents. No
+product suite was repeated for documentation-only changes. No database, binary,
+capture or private QA path was added to Git.
+
+Evidence commit `14dc6c2c31aa09465dd20c92c44596bc04dd4ad3` was pushed using
+`git push -u origin feat/phase-03-scanner-core`, exit 0. A separate
+`git ls-remote --heads origin refs/heads/feat/phase-03-scanner-core` returned the
+same full hash as local HEAD; `git status --short --branch` was clean. This
+receipt identifies the first verified publication; the subsequent documentation
+receipt does not change the tested product source `9da451c`.
+
+Task 11 and phase acceptance remain open for the explicitly retained native/input
+checks and human visual review. No PR, merge, tag, release or Phase 04 was created.
