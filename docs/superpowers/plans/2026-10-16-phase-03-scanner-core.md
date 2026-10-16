@@ -491,21 +491,28 @@ There is no additional IPC, test-only product branch or alternate handler list.
 Normal Tauri ExitRequested calls shutdown_scans without preventing exit or waiting
 for native I/O. No public shutdown/diagnostic IPC is added.
 
-- [ ] Write `scan_native_integration`: seed temporary schema-2 roots and a
+- [x] Write `scan_native_integration`: seed temporary schema-2 roots and a
       sentinel, explicit native start yields genuine metadata metrics, no start
       on load/list/Add/Enabled/check/restart. Cancel reaches stopping then terminal
       only after work stops; root filesystem/sentinel unchanged. Permit/gate and
       scalar snapshots tested under a deliberately slow synthetic adapter too.
-- [ ] Verify Task 1 P02-NATIVE-ACL and Task 7 scanner-acl receipts before wiring
+- [x] Verify Task 1 P02-NATIVE-ACL and Task 7 scanner-acl receipts before wiring
       real `MacOsAdapter.scan_filesystem` into production setup. If either is
       unresolved stop this integration step, not silently downgrade it to mock QA.
-- [ ] Implement wiring, run focused application/Tauri `scan_native_integration`
+- [x] Implement wiring, run focused application/Tauri `scan_native_integration`
       tests and native `--case scan-smoke` with temporary roots. Inspect scope:
       directory/metadata only, no read-content method or executable call; no DB
       scan rows created, schema remains 2. Commit `feat: integrate read-only native workspace scanning`.
 
 **Exit:** Real engine accessible only by authorized explicit start; no providers
 or Phase 05 UI added. Record test-target vs normal-app evidence separately.
+
+Execution receipt: `b0dc9d2`, independently reviewed. Actual Wry scan-smoke uses
+the production factory and real metadata engine on one explicit temporary root;
+Quick/Deep observe 14 logical bytes with unchanged SQLite/schema 2 and sentinels.
+Shared ExitRequested shutdown is checked independently of service Drop. Slow-I/O
+cancel/gate behavior is separately tested with a controlled synthetic filesystem.
+Normal bundle launch and new UI acceptance remain Task 11, not inferred here.
 
 ## Task 9: Add typed frontend scan transport and resilient polling state
 

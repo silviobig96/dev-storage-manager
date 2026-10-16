@@ -23,7 +23,7 @@ workspace scan, release or Phase 04 feature is authorized.
 | ------------------------------------ | ----- | ------------------------------------- |
 | Isolated native verification         | 1     | Implemented; reviewed receipts below  |
 | Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed    |
-| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–7 reviewed; 8–10 not executed |
+| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–8 reviewed; 9–10 not executed |
 | Functional/native/human acceptance   | 11    | Not executed                          |
 
 ## Inherited native obligations
@@ -507,3 +507,72 @@ No new frontend assets were needed or rebuilt here. No global preference, OS
 permission or personal workspace was changed. New Phase 03 visual QA remains
 awaiting human review. Inherited and new-command native ACL gates plus source
 review now permit Task 8 integration; they do not establish its engine evidence.
+
+## Task 8 — real metadata runner integration
+
+Source `b0dc9d258941ec73290ebb7f5312a99d58388564`; independent task review
+approved spec compliance and quality, no findings. Controller matched the native
+and normal binary hashes below; prior core/platform/ACL receipts remain distinct.
+Production and the isolated test executable now share native_runtime's
+service factory: MacOsAdapter.scan_filesystem → MetadataScanRunner → core scan.
+Both reviewed ACL gates preceded this wiring. No new permission, command, DTO,
+dependency, schema or bundle identity. Construction does not start traversal.
+Normal ExitRequested calls shutdown_scans without prevent_exit, joining or waiting
+on blocked I/O. The test executable uses that same lifecycle callback for smoke.
+
+Focused TDD: missing-runner API RED then 2 application integration tests GREEN;
+registered-factory start returned application_unavailable before wiring, then
+1 Tauri integration test GREEN. Native smoke first failed its post-event-loop
+shutdown assertion, then passed after the shared ExitRequested hook. Retaining
+the service outside app teardown distinguishes the hook from service Drop.
+
+- `cargo test -p dev-storage-application scan_native_integration --locked`: 2 passed.
+- `cargo test -p dev-storage-manager scan_native_integration --locked`: 1 passed.
+- `cargo test -p dev-storage-application scan_ --locked`: 21 passed.
+- `cargo test -p dev-storage-manager scan_ --locked`: 7 passed.
+- `cargo build -p dev-storage-manager --locked`: exit 0, normal development
+  binary built but not launched.
+- Scoped rustfmt and `git diff --check`: exit 0. No consolidated suite repeated.
+
+### Actual Wry real-engine fixture smoke
+
+```sh
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case scan-smoke
+```
+
+Final-source run exit 0. Native executable SHA256
+`2f245e20fe802edaafd215c483fe203daf54258c3d7c1d50f3dad2656c53358e`.
+Each start explicitly selected only controlled fixture ID 1 from twelve temporary
+rows. Fixture: root/sentinel 9 bytes and root/nested/data 5 bytes, three directory
+entries total. Counts below include root and nested directory; traversal checks
+include two EOF requests, not five measured objects.
+
+| Mode  | Logical bytes | Observed allocated bytes | Files | Directories | Traversal checks | Elapsed IPC-to-terminal ms | End / stop reason          |
+| ----- | ------------- | ------------------------ | ----- | ----------- | ---------------- | -------------------------- | -------------------------- |
+| Quick | 14            | 8192                     | 2     | 2           | 5                | 69                         | completed, inactive / null |
+| Deep  | 14            | 8192                     | 2     | 2           | 5                | 65                         | completed, inactive / null |
+
+Durations include native transport/polling, not engine-only benchmarks. Allocation
+is this volume's observation, not an asserted filesystem constant. Earlier 67/71 ms
+runs are superseded by these final-artifact measurements. No performance promise
+for personal repositories follows from this small fixture.
+
+Listing, root check, enable changes and initial construction left session null.
+Controlled Add occurred during fixture setup, not through a native picker.
+SQLite bytes/listing and schema 2 stayed identical during scans. Sentinel/data
+contents, exact entry counts, inode/size/nanosecond mtime remained unchanged.
+A new service reopened on that temporary database had no retained session;
+this is service reconstruction, not process-relaunch evidence. After actual
+ExitRequested, the still-retained service returned application_unavailable.
+
+The application test also runs the real engine/MetadataScanRunner against a
+deliberately blocked synthetic filesystem: exact `9007199254740993` survives
+serialization, cancel acknowledges while workerActive and gate remain held,
+and only releasing I/O produces terminal cancelled and releases ownership.
+This is not a claim of native OS-blocked-I/O cancellation. Real native smoke's
+small scans finished normally. No personal workspace or application DB was used.
+
+Normal binary SHA256
+`00de68ffcca412a73fc93eb8a3c86912f8928769804b7c4cc47bc34546e2e080`;
+no normal-bundle launch/DMG/current UI QA is claimed here. Those remain Task 11.
+Human visual QA of Phase 03 remains awaiting review.
