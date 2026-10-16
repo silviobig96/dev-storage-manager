@@ -1,10 +1,40 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { OverviewView } from './OverviewView';
+import { scanController } from '../features/scans/scanTestFixtures';
 
 describe('Overview', () => {
+  it.each(['reconciling', 'unavailable'] as const)(
+    'shows %s scan status before any snapshot exists',
+    (status) => {
+      render(
+        <OverviewView
+          healthState={{ status: 'loading' }}
+          scan={scanController({ status })}
+        />,
+      );
+      const storage = screen.getByRole('region', { name: 'Storage overview' });
+      expect(within(storage).getByRole('status')).toHaveTextContent(
+        status === 'reconciling'
+          ? 'Checking scan status'
+          : 'Scan status is unavailable',
+      );
+      expect(within(storage).queryByText('No storage analysis yet')).toBeNull();
+      expect(within(storage).queryByText(/Start an explicit scan/)).toBeNull();
+      if (status === 'unavailable')
+        expect(
+          within(storage).getByText(/Workspaces.*reconnect/i),
+        ).toBeVisible();
+    },
+  );
+
   it('explains the absence of analysis without inventing data or actions', () => {
-    render(<OverviewView healthState={{ status: 'loading' }} />);
+    render(
+      <OverviewView
+        healthState={{ status: 'loading' }}
+        scan={scanController()}
+      />,
+    );
     expect(
       screen.getByRole('heading', { level: 1, name: 'Overview' }),
     ).toBeVisible();

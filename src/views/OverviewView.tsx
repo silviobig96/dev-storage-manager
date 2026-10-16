@@ -31,8 +31,15 @@ export function OverviewView({
       />
       {setup}
       <Section title="Storage overview">
-        {scan?.snapshot ? (
-          <ScanSummary scan={scan} />
+        {scan && (scan.snapshot || scan.status !== 'ready') ? (
+          <>
+            <ScanSummary scan={scan} />
+            {scan.status === 'unavailable' && (
+              <p className="scan-caption">
+                Open Workspaces to reconnect and check scan status.
+              </p>
+            )}
+          </>
         ) : (
           <EmptyState
             title="No storage analysis yet"

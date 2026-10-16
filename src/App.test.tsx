@@ -67,10 +67,77 @@ describe('App', () => {
     ).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeDisabled();
     expect(screen.getByText(/Workspace changes are paused/)).toBeVisible();
+    const storage = screen.getByRole('region', { name: 'Storage overview' });
+    expect(within(storage).getByRole('status')).toHaveTextContent(
+      'Scan status is unavailable',
+    );
+    expect(within(storage).queryByText('No storage analysis yet')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
     expect(screen.getByRole('button', { name: 'Reconnect' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    vi.mocked(getWorkspaceScan).mockResolvedValue({
+      epoch: 'p1-t1-g0',
+      session: null,
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    expect(screen.getByText('No storage analysis yet')).toBeVisible();
+    expect(startWorkspaceScan).not.toHaveBeenCalled();
+    expect(cancelWorkspaceScan).not.toHaveBeenCalled();
     expect(selectAndAddWorkspace).not.toHaveBeenCalled();
     expect(skipWorkspaceSetup).not.toHaveBeenCalled();
+  });
+  it('keeps a lost first Start uncertain on Overview and preserves explicit replay identity', async () => {
+    vi.mocked(listWorkspaces).mockResolvedValue({
+      setupState: 'configured',
+      workspaces: [
+        {
+          id: '1',
+          displayName: 'Code',
+          selectedPath: '/fixture/Code',
+          enabled: true,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+      overlaps: [],
+    });
+    vi.mocked(startWorkspaceScan).mockRejectedValueOnce(
+      new Error('lost reply'),
+    );
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Quick scan' }));
+    const request = vi.mocked(startWorkspaceScan).mock.calls[0]![0];
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    const heading = screen.getByRole('heading', { level: 1, name: 'Overview' });
+    const storage = screen.getByRole('region', { name: 'Storage overview' });
+    expect(within(storage).getByRole('status')).toHaveTextContent(
+      'Scan status is unavailable',
+    );
+    expect(within(storage).queryByText('No storage analysis yet')).toBeNull();
+    expect(within(storage).queryByText(/Start an explicit scan/)).toBeNull();
+    expect(heading).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    expect(screen.getByText(/Scan status is unavailable/)).toBeVisible();
+    expect(startWorkspaceScan).toHaveBeenCalledOnce();
+    expect(cancelWorkspaceScan).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    expect(screen.getByRole('button', { name: 'Deep scan' })).toBeDisabled();
+    vi.mocked(startWorkspaceScan).mockResolvedValueOnce(
+      scanSnapshot({ requestId: request.requestId }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Quick scan' }));
+    expect(startWorkspaceScan).toHaveBeenLastCalledWith(request);
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    expect(
+      screen.getByText('Scan completed within the declared scope.'),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Overview' }),
+    ).toHaveFocus();
   });
   it('shares an explicitly started scan across views without moving navigation focus or permitting setup writes', async () => {
     const row = {
@@ -186,9 +253,9 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Overview' }),
     ).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      /connecting to desktop foundation/i,
-    );
+    expect(screen.getByText(/connecting to desktop foundation/i)).toBeVisible();
+    expect(screen.getByText(/Checking scan status/)).toBeVisible();
+    expect(screen.queryByText('No storage analysis yet')).toBeNull();
   });
 
   it('reports the connected schema version without adding storage actions', async () => {

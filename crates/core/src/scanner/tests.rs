@@ -407,6 +407,59 @@ fn scan_limits_and_partial() {
     assert_eq!(fs.counters.lock().unwrap().live, 0);
 }
 
+// Adapter resource stops must terminate all roots and preserve any measured prefix.
+#[test]
+fn scan_adapter_descriptor_exhaustion_propagates_and_releases_cursors() {
+    struct ExhaustedRoot;
+    impl ScanFilesystem for ExhaustedRoot {
+        fn anchor_root(
+            &self,
+            _: &StoredWorkspace,
+            _: &dyn ScanIoControl,
+        ) -> Result<Box<dyn ScanDirectory>, ScanIoError> {
+            Err(ScanIoError::Stopped(StopReason::DescriptorLimit))
+        }
+    }
+    let mut fs = Filesystem::default();
+    fs.directory(1, vec![entry(10, EntryKind::RegularFile, 3)]);
+    fs.directories
+        .get_mut(&1)
+        .unwrap()
+        .entries
+        .push(Err(ScanIoError::Stopped(StopReason::DescriptorLimit)));
+    fs.directory(2, vec![entry(20, EntryKind::RegularFile, 5)]);
+    for (filesystem, bytes) in [(&ExhaustedRoot as &dyn ScanFilesystem, 0), (&fs, 3)] {
+        let report = scan(
+            vec![root(1, 1), root(2, 2)],
+            ScanMode::Quick,
+            filesystem,
+            &ScanControl::new(ScanMode::Quick),
+            &mut |_| {},
+        );
+        assert_eq!(report.state, ScanState::Partial);
+        assert_eq!(report.stop_reason, Some(StopReason::DescriptorLimit));
+        assert_eq!(report.failure, None);
+        assert_eq!(
+            report.progress.metrics.observed_logical_bytes,
+            DecimalQuantity(bytes)
+        );
+        assert_ne!(report.progress.coverage, Coverage::CompleteWithinPolicy);
+        assert!(report
+            .progress
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == ScanDiagnosticCode::DescriptorLimit));
+        assert!(!report
+            .progress
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == ScanDiagnosticCode::UnsupportedFilesystem));
+    }
+    let counters = fs.counters.lock().unwrap();
+    assert_eq!(counters.live, 0);
+    assert!(!counters.events.iter().any(|event| event == "anchor:2"));
+}
+
 // Detects treating policy exclusions or unknown allocation as lost logical traversal.
 #[test]
 fn scan_policy_and_allocation_coverage() {

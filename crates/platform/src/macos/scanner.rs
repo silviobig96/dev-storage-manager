@@ -41,6 +41,9 @@ fn call<T>(control: &dyn ScanIoControl, action: impl FnOnce() -> ScanResult<T>) 
 fn io_error(error: io::Error, root: bool) -> ScanIoError {
     use ScanDiagnosticCode::*;
     diagnostic(match error.raw_os_error() {
+        Some(libc::EMFILE | libc::ENFILE) => {
+            return ScanIoError::Stopped(StopReason::DescriptorLimit);
+        }
         Some(libc::ENOENT) => {
             if root {
                 RootMissing
@@ -1273,6 +1276,20 @@ mod tests {
             scope_observation(regular, &value, &[]).unwrap().cloud,
             CloudFact::Unknown
         );
+    }
+
+    // Resource exhaustion must stop the session, not become a filesystem exclusion.
+    #[test]
+    fn scan_descriptor_exhaustion_stops_root_and_descendant_operations() {
+        for errno in [libc::EMFILE, libc::ENFILE] {
+            for root in [true, false] {
+                assert_eq!(
+                    io_error(io::Error::from_raw_os_error(errno), root),
+                    ScanIoError::Stopped(StopReason::DescriptorLimit),
+                    "errno {errno}, root {root}"
+                );
+            }
+        }
     }
 
     // Exact root/entry attribution must survive errno sanitization without raw paths.
