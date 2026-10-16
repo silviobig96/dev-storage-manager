@@ -4,6 +4,7 @@ import { OverviewView } from './views/OverviewView';
 import { WorkspacesView } from './views/WorkspacesView';
 import { WorkspaceSetup } from './features/workspaces/WorkspaceSetup';
 import { useWorkspaces } from './features/workspaces/useWorkspaces';
+import { useWorkspaceScan } from './features/scans/useWorkspaceScan';
 import { Button } from './components/ui/Button';
 import type { FeedbackNotice } from './components/ui/FeedbackMessage';
 import { getAppHealth, type AppHealth } from './lib/desktop';
@@ -15,6 +16,7 @@ export type HealthState =
 
 function App() {
   const workspaces = useWorkspaces();
+  useWorkspaceScan();
   const [currentView, setCurrentView] = useState<AppView>('overview');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<'heading' | { row: string } | null>(null);

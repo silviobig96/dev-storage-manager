@@ -11,6 +11,18 @@ import {
   checkWorkspace,
 } from './lib/workspaces';
 import { getAppHealth, type AppHealth } from './lib/desktop';
+import {
+  getWorkspaceScan,
+  startWorkspaceScan,
+  cancelWorkspaceScan,
+} from './lib/scans';
+
+vi.mock('./lib/scans', async (original) => ({
+  ...(await original<typeof import('./lib/scans')>()),
+  getWorkspaceScan: vi.fn(),
+  startWorkspaceScan: vi.fn(),
+  cancelWorkspaceScan: vi.fn(),
+}));
 
 vi.mock('./lib/desktop', () => ({ getAppHealth: vi.fn() }));
 vi.mock('./lib/workspaces', async (original) => ({
@@ -77,6 +89,11 @@ describe('App', () => {
     ).toBeVisible();
   });
   beforeEach(() => {
+    vi.mocked(getWorkspaceScan)
+      .mockReset()
+      .mockResolvedValue({ epoch: 'p1-t1-g0', session: null });
+    vi.mocked(startWorkspaceScan).mockReset();
+    vi.mocked(cancelWorkspaceScan).mockReset();
     vi.mocked(getAppHealth).mockReset().mockResolvedValue(health);
     vi.mocked(listWorkspaces).mockReset().mockResolvedValue({
       setupState: 'skipped',
@@ -87,6 +104,16 @@ describe('App', () => {
     vi.mocked(skipWorkspaceSetup).mockReset();
     vi.mocked(removeWorkspace).mockReset();
     vi.mocked(checkWorkspace).mockReset();
+  });
+
+  it('owns scan recovery across navigation without starting or cancelling work', async () => {
+    const { unmount } = render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    expect(getWorkspaceScan).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(startWorkspaceScan).not.toHaveBeenCalled();
+    expect(cancelWorkspaceScan).not.toHaveBeenCalled();
   });
 
   it('renders the shell while health is loading', () => {
