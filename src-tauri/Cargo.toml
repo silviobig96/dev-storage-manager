@@ -8,6 +8,14 @@ license.workspace = true
 name = "dev_storage_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+native-acceptance = []
+
+[[test]]
+name = "native_acceptance"
+harness = false
+required-features = ["native-acceptance"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -24,3 +32,7 @@ tokio = { version = "=1.53.1", features = ["sync", "time"] }
 [dev-dependencies]
 serde_json = "1"
 tauri = { version = "=2.11.5", features = ["test", "unstable"] }
+tempfile = "=3.27.0"
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+objc2-web-kit = { version = "=0.3.2", default-features = false, features = ["std", "WKWebView"] }

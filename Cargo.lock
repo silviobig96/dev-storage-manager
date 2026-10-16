@@ -693,11 +693,13 @@ dependencies = [
  "dev-storage-core",
  "dev-storage-persistence",
  "dev-storage-platform",
+ "objc2-web-kit",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tempfile",
  "tokio",
 ]
 

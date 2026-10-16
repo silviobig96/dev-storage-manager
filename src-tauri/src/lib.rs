@@ -1,4 +1,5 @@
 mod commands;
+mod registration;
 mod workspace_runtime;
 mod workspaces;
 
@@ -7,24 +8,8 @@ use std::{fs, sync::Arc};
 use dev_storage_application::ApplicationService;
 use dev_storage_persistence::Database;
 use dev_storage_platform::MacOsAdapter;
+use registration::{application_context, application_handler};
 use tauri::Manager;
-
-fn application_context<R: tauri::Runtime>() -> tauri::Context<R> {
-    tauri::generate_context!()
-}
-
-fn application_handler<R: tauri::Runtime>(
-) -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
-    tauri::generate_handler![
-        commands::get_app_health,
-        workspaces::list_workspaces,
-        workspaces::select_and_add_workspace,
-        workspaces::remove_workspace,
-        workspaces::set_workspace_enabled,
-        workspaces::check_workspace,
-        workspaces::skip_workspace_setup
-    ]
-}
 
 pub fn run() {
     tauri::Builder::default()
