@@ -260,7 +260,7 @@ fn assert_layout(geometry: &Geometry, dark: bool) -> QaResult<()> {
 }
 
 #[cfg(target_os = "macos")]
-async fn page_zoom(webview: &Webview) -> QaResult<f64> {
+pub(super) async fn page_zoom(webview: &Webview) -> QaResult<f64> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     webview
         .with_webview(move |platform| {
@@ -277,7 +277,7 @@ async fn page_zoom(webview: &Webview) -> QaResult<f64> {
 }
 
 #[cfg(not(target_os = "macos"))]
-async fn page_zoom(_: &Webview) -> QaResult<f64> {
+pub(super) async fn page_zoom(_: &Webview) -> QaResult<f64> {
     Err(QaFailure::Transport(
         "native acceptance requires macOS WKWebView".into(),
     ))

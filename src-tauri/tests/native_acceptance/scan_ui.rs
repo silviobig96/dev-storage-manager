@@ -275,8 +275,18 @@ pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
     let evidence = json!({"case":"scan-ui","snapshotRenderingOnly":snapshot_rendering,"visibility":eval(&main,"document.visibilityState").await?,"activation":"DOM on actual Wry; not native keyboard/pointer","realMetadata":real,"geometry":geometry,"controlledSynthetic":{"state":stopping["session"]["state"],"workerActive":true,"logicalBytes":"9007199254740993","allocatedBytes":null,"stopReason":"time_budget","terminal":stopped["state"],"terminalWorkerActive":false},"dialog":"DOM activated native dialog: Cancel focus and invoker restoration passed","database":"identical","sentinels":"unchanged","humanVisualQa":"AWAITING HUMAN REVIEW"});
     eprintln!("AUTOMATIC_SCAN_UI {evidence}");
     if std::env::args().any(|arg| arg == "--hold") {
-        eprintln!("INTERACTIVE READY pid={} Phase03 controlled fixture; terminal partial synthetic summary; next Quick/Deep use real metadata; no personal DB. Ten minute review window.", std::process::id());
+        main.set_zoom(2.).map_err(transport)?;
+        require(
+            geometry::page_zoom(&main).await? == 2.,
+            "review WK pageZoom 2",
+        )?;
+        eprintln!("INTERACTIVE READY pid={} pageZoom=2 Phase03 controlled fixture; terminal partial synthetic summary; next Quick/Deep use real metadata; no personal DB. Ten minute review window.", std::process::id());
         tokio::time::sleep(Duration::from_secs(600)).await;
+        main.set_zoom(1.).map_err(transport)?;
+        require(
+            geometry::page_zoom(&main).await? == 1.,
+            "review WK pageZoom restoration",
+        )?;
     }
     Ok(evidence)
 }
