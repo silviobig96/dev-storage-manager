@@ -1,6 +1,7 @@
 # Phase 02 — Workspace System Design
 
-**Status:** Proposed specification; human review required before implementation.
+**Status:** Reviewed and authorized for implementation with the 2026-10-16
+execution refinements. Human visual QA of Phase 02 remains pending.
 
 **Date:** 2026-10-16. **Base:** `8c9fc88` on `origin/main`, including Phase
 01.5 and wide-window correction `8173c67`. **Branch:** `feat/phase-02-workspaces`.
@@ -10,7 +11,8 @@
 Remember where a developer chooses to keep projects, without inspecting those
 projects. A workspace is configuration for future analysis, not evidence that a
 scan occurred. This document and its [implementation plan](../plans/2026-10-16-phase-02-workspaces.md)
-are documentation only; neither authorizes implementation until human review.
+were reviewed by the human; the subsequent implementation task authorizes
+execution with the capability correction below, not Phase 03 or cleanup.
 
 Already approved requirements:
 
@@ -21,7 +23,7 @@ Already approved requirements:
 - No automatic deletion. Adding a folder neither starts analysis nor authorizes
   cleanup. Removing configuration never removes or changes files on disk.
 
-Proposed decisions for review, not historical user approvals:
+Decisions accepted by the implementation task (not earlier historical approvals):
 
 1. Include an **Enabled** checkbox and manual **Check availability** per row.
    Enabled means eligible for a future explicitly requested analysis, not a timer
@@ -345,9 +347,15 @@ states that registered application commands are allowed by default unless
 included in `AppManifest::commands`. In `src-tauri/build.rs`, declare all seven
 commands above in that manifest. Grant only their generated `allow-*` permissions
 plus existing `core:default` to the existing main capability, with `local: true`,
-`windows: ["main"]`, `webviews: ["main"]`, and no remote URL grants. Retain the
+`webviews: ["main"]`, no `windows` grant, and no remote URL grants. Retain the
 explicit capability selection in `tauri.conf.json`. Verify generated permission
 names against the installed tauri-build 2.6.3, not a guessed prefix.
+
+The [capability reference](https://v2.tauri.app/reference/acl/capability/)
+defines window and webview matches as alternatives, not an AND restriction.
+Omitting windows prevents a second webview inside the main window from inheriting
+these permissions. Verify this against installed runtime authority and actual
+invocation tests; check the real containing window as an additional guard.
 
 Every command also checks the injected caller's main window/webview label (not
 a caller-supplied label). ACL/runtime authority must reject remote-origin and

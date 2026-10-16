@@ -19,15 +19,15 @@ limited to the reviewed spec's Rust dialog and existing-lockfile bindings.
 
 **Spec:** [Phase 02 design](../specs/2026-10-16-phase-02-workspaces-design.md).
 
-**Status:** Planning only. All implementation steps remain unchecked. Human
-review of both documents and an implementation task are required before execution.
+**Status:** Human-reviewed; implementation authorized by the current task.
+Only verified steps may be checked. Human visual QA remains a separate gate.
 
 ## Global Constraints
 
 - Use the normal checkout and `feat/phase-02-workspaces`, based on merged
   `8c9fc88`. No worktrees, other branches, reset, clean, stash, rebase, or force.
-- The documentation task authorizes publishing its documents on this branch.
-  A future implementation task must explicitly authorize its own push. Never
+- The current implementation task authorizes publishing this feature branch
+  after functional gates pass and the checkout is clean. Never
   push main/tags, change origin, open a PR, merge, or release under this plan.
 - No automatic deletion. Remove workspace removes only app-owned configuration.
 - Zero workspaces is valid. Never assume `~/Repositories`, HOME, or another root.
@@ -349,8 +349,10 @@ Duplicate { existing_id }}` with internally tagged snake_case `status` and
       not run synchronous SQLite contention on the event-loop thread.
 - [ ] Declare all seven app commands in `AppManifest::commands` in build.rs;
       add their generated `allow-*` entries to default capability with `local: true`,
-      main window/webview only, no remote. Retain core:default. Add injected main
-      caller-label guards; ACL enforces origins. No dialog/fs/shell grants or generic
+      `webviews: ["main"]` only and no `windows` grant (OR semantics), no remote.
+      Retain core:default. Add injected main webview and real containing-window
+      guards; ACL enforces origins. Test a second webview in the main window
+      cannot inherit commands. No dialog/fs/shell grants or generic
       scopes. Callback uses oneshot; blocking metadata uses two retained permits
       and timeout; DB jobs are short and separate. No mutex is held across await.
 - [ ] Run focused tests, `cargo check --workspace --all-targets --locked` and
