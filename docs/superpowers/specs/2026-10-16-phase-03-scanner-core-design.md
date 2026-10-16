@@ -1,7 +1,9 @@
 # Phase 03 — Read-only Scanner Core Design
 
-**Status:** Proposed for human review. Design/planning only; no scanner, native
-test target, new commands or UI controls have been implemented by this run.
+**Status:** Approved for implementation on 2026-10-16 with the review
+clarifications below. Approval is authority to implement, not functional/native
+evidence or acceptance of the new UI. The implementation record tracks actual
+progress and remaining gates.
 **Date:** 2026-10-16. **Base:** `04018df8d152268cebd2f62aa554ddfa49c30d7a`
 (merged Phase 02). **Branch:** `feat/phase-03-scanner-core`.
 **Plan:** [Implementation and verification plan](../plans/2026-10-16-phase-03-scanner-core.md).
@@ -23,11 +25,12 @@ directory identity, enabled configuration, `ApplicationService<A>`, schema-2
 capability and actual-parent guard, and race-safe React feature controllers.
 Availability is root metadata only, not a scan. Its existing contract stays.
 
-**New proposals requiring review:** one session/one traversal worker; fixed Quick
+**Accepted for this implementation:** one session/one traversal worker; fixed Quick
 and Deep budgets; frozen configuration during live work; descriptor-relative
 macOS traversal; deterministic exclusive attribution; polling bounded snapshots;
 memory-only results; the isolated native test target; and minimal scan controls
-in existing views. These are recommendations, not previously approved behavior.
+in existing views. The implementation assignment accepted these decisions;
+this is not evidence that implementation or verification has passed.
 
 ## Alternatives and recommendation
 
@@ -92,8 +95,10 @@ Both versions already exist in Cargo.lock; preserve all versions and inspect
 feature closure/lock edges. Existing Tauri dev `test,unstable` supports child
 webviews. The WebKit binding is only for reading actual `pageZoom` from the native
 object. No new production dependency, JS package, UI automation framework, Swift,
-OS permission, or generic JS grant is proposed. Human review must approve these
-dev edges and the test-only loopback fixture described next before implementation.
+OS permission, or generic JS grant is proposed. The implementation assignment
+explicitly approved these dev edges and the test-only loopback fixture below.
+It binds only 127.0.0.1:0, serves controlled HTML only, makes no Internet/proxy
+requests and closes when its case ends. This authority never extends to the app.
 
 Verify exclusion using Cargo metadata (only a `test` target), normal/build feature
 tree, normal app/DMG builds without the opt-in feature, and a normal main-bin
@@ -167,6 +172,11 @@ arbitrary exclusions, worker counts or caller-chosen budgets. Requests contain
 request before filesystem work. With zero enabled roots UI offers configuration,
 not a fake successful zero-byte scan. The UI's default is all enabled roots,
 captured at click time; an individual workspace can be requested by its ID.
+The 32-root cap belongs only to a scan request, never to saved configuration.
+If more than 32 are enabled, disable both scan-start controls and explain:
+“A scan supports up to 32 enabled workspaces. Disable some workspaces to scan.”
+Do not pick a prefix/subset, change enabled or add a subset selector. The backend
+also rejects an oversized request before filesystem work.
 
 Resolve only those IDs through a bounded Database query using the existing
 repository. Store an owned session snapshot sorted by numeric WorkspaceId;
@@ -327,6 +337,9 @@ already imprecise JS Number. Every byte/entry/revision/time quantity crossing
 IPC is a canonical nonnegative decimal string; TS parses BigInt for formatting.
 UI uses **GiB = 2^30 bytes**, or MiB/KiB for small values, explicitly labelled.
 Never call a GiB value GB. The exact integer byte value is accessible text.
+An observation commits dedup identity, ownership and all metric increments
+atomically after checked calculations succeed. Overflow must not leave an
+identity marked accounted with inconsistent totals or claim complete coverage.
 
 `ScanMetrics` has `observedLogicalBytes`, nullable `observedAllocatedBytes`,
 `uniqueFiles`, `uniqueDirectories`, `referencesDeduplicated`,
@@ -429,6 +442,9 @@ payload is request_conflict. An unseen request with stale expectedEpoch rejects
 stale_epoch; generation changes on every accepted start. Thus a late replay of
 an evicted request cannot secretly create a new scan. Different request during
 live work rejects scan_busy. Retain only one request mapping, with its session.
+Check the retained request replay before gate/busy or current-epoch rejection.
+Its original accepted payload/expectedEpoch still replays while its own gate is
+occupied; only other requests and evicted stale replays use those rejections.
 
 Snapshot includes sessionId, requestId, epoch, mode, state, decimal revision,
 startedAt/finishedAt, workerActive, nullable stopReason, sorted workspace rows
@@ -483,7 +499,27 @@ same session summary when data exists, retaining full structural width/health.
 No active roots: “No enabled workspace folders. Add or enable a workspace to scan.”
 No progress denominator: “Scanning… 1,234 entries checked”, never invented percent
 or ETA. Stopping: “Waiting for a filesystem operation to finish. No new scan can
-start yet.” Partial: “Partial measurement — some folders were not measured.”
+start yet.” Coverage copy derives from actual diagnostics and may combine:
+
+- Limits: “Partial measurement — traversal stopped at a scan limit.” Name the
+  actual depth, entry, identity, descriptor, diagnostic, payload or time reason.
+- Missing/denied/changed branches: “Partial measurement — some folders could
+  not be checked or changed during the scan.”
+- Complete logical traversal, incomplete allocation: “File sizes measured;
+  allocated space is only partially known.” Never claim folders were omitted
+  solely because allocation is unknown.
+- Cancellation: “Scan cancelled. Measurements shown are incomplete.”
+- Policy exclusions: “Declared exclusions: symbolic links, mount crossings and
+  special files are not included.” Show only categories actually excluded and
+  their counts; exclusions alone do not mean a resource-limited traversal.
+
+Deep copy states “Deep scan also has limits.” Time is a cooperative work budget,
+not a duration guarantee; a blocked call can outlive it. A null value is “Not
+available”; an observed zero is “0 B”; zero exclusive contribution covered by
+another root is “Accounted for in another workspace” with its coveredBy names,
+not an empty-folder claim. Announce start/state/error/terminal changes, not each
+250 ms counter update; progress never moves focus.
+
 Terminal complete: “Scan completed within the declared scope.” Always show
 “Observed file sizes; not reclaimable space.” with the policy exclusions.
 
@@ -517,5 +553,6 @@ No provider registry/tool detection, manifests/content reads, project intelligen
 global Mac scan, cleanup classification proposals, cleanup plans/execution,
 user-file mutation, notifications, monitoring, telemetry, product networking,
 FDA/permission bypass, privileged helpers, Swift styling, Windows, schema/history
-changes, identifier change or Phase 05 dashboard. This documentary run performs
-none of the implementation, tests, harness work or workspace analysis above.
+changes, identifier change or Phase 05 dashboard. The initial design-only run
+performed no implementation or analysis. The current assignment authorizes
+implementation and controlled fixtures, not analysis of personal workspaces.

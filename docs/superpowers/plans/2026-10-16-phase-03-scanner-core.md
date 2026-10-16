@@ -18,14 +18,17 @@ App-level React controller expose a minimal existing-view integration.
 TypeScript 6/Vite 8/Vitest 5. Do not upgrade packages, Node 22 or toolchain.
 
 **Spec:** [Phase 03 design](../specs/2026-10-16-phase-03-scanner-core-design.md).
-**Status:** Proposed for human review; no task below executed. Base `04018df`
+**Status:** Approved for implementation with the 2026-10-16 assignment's narrow
+clarifications. Checkboxes record actual execution, not approval. Base `04018df`
 on `feat/phase-03-scanner-core`. Phase 02 human visual approval is already granted;
-its three native checks remain open. This plan is not implementation authority.
+its three native checks remain open until new sufficient evidence closes them.
 
 ## Global constraints
 
 - Zero or more workspaces remain valid; explicit start uses 1–32 enabled IDs.
   No arbitrary JS paths, automatic scans, scan resumption or general Mac scan.
+  Configuration itself has no 32-workspace cap; over 32 enabled blocks UI start
+  with the spec's actionable message, never a silently chosen subset.
 - No content reads, hashes, project tooling, providers, cleanup, filesystem
   writes, permission changes, monitor, product networking/telemetry or Windows.
 - Database/migrations stay schema 2; results in memory only, no history tables.
@@ -44,7 +47,7 @@ its three native checks remain open. This plan is not implementation authority.
 - P02-NATIVE-ACL must pass before real scanner integration; new commands need
   native denial coverage too. P02-NATIVE-LAYOUT/ZOOM must pass before Phase 03
   UI acceptance. No automatic inheritance of PASS from mocks/browser/builds.
-- Human review must approve test-only loopback fixture and pinned dev edges
+- The implementation assignment approves the test-only loopback fixture and dev edges
   `tempfile =3.27.0`, `objc2-web-kit =0.3.2` (`std,WKWebView`, no defaults).
   No production permission expansion, harness resource or debug product mode.
 - Functional, browser, native test-target, normal bundle and human QA remain
@@ -262,6 +265,8 @@ overflow slot within the total limit of 128.
       unique object produces identity_limit, preserves exact first two totals;
       actual slot size 64 bytes, capacities/bytes equal spec. Addition near
       u64::MAX and blocks ×512 overflow return quantity_overflow without wrapping.
+      Failed observation leaves identity/ownership/all metric fields unchanged;
+      retrying that identity is not treated as a previously accounted object.
       One unknown allocation among two files preserves logical observations,
       allocation sample count/unknown count and partial allocation coverage.
       Assert logicalCoverage remains complete_within_policy while
@@ -360,7 +365,10 @@ the real runner into production. No frontend-injectable testing switch.
       No reentrant add-gate deadlock. Barrier-blocked worker keeps the reservation
       after cancel until released; all mutation counters stay zero meanwhile.
 - [ ] Write `scan_idempotent_start`: same request/payload returns same session
-      after dropped receiver; adapter starts once. Changed payload gives
+      after dropped receiver; adapter starts once.
+      Replay with its original accepted expectedEpoch succeeds before busy/gate
+      checks while that same session is validating/running/cancelling/stopping.
+      It starts no worker and never revalidates its roots. Changed payload gives
       request_conflict; different request while live gives scan_busy. After a
       replacement session, evicted old request/epoch gives stale_epoch. Restart
       invalidates old epochs, has no active/retained result and starts nothing.
@@ -490,6 +498,12 @@ and exact configuration-removal safety copy/focus lifecycle stay independent.
       exact spec copy, GiB/exact bytes, policy exclusions, covered-by attribution,
       no reclaimable-value label, cleanup action, fabricated metric or extra route.
       The explicit “not reclaimable space” disclaimer remains visible.
+      Assert distinct spec copy for traversal limits, inaccessible/changed roots,
+      allocation-only uncertainty, cancellation and actual policy exclusions.
+      coveredBy with zero contribution shows accounted elsewhere, not empty.
+      More than 32 enabled disables starts with the actionable message, leaves
+      all saved/enabled rows intact and invokes no subset; Deep says it has limits.
+      Counter-only updates do not trigger repeated live-region announcements.
 - [ ] Assert Start fires once on double activation with captured IDs/mode; Deep
       is an explicit separate intent; nothing starts on render/navigation/config
       change. Cancel remains available until worker stop; no new Start or workspace
@@ -524,6 +538,8 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
       must reject before handlers/picker/DB/scanner. Normal app bundle smoke uses
       only a deliberately selected temporary fixture, never personal workspaces.
       Identify hashes/commits/artifact type; test target is not normal bundle QA.
+      Record controlled fixture entry counts, mode, measured duration and actual
+      termination reason; do not extrapolate real-repository performance.
 - [ ] Run native exact-size/light-dark/zoom cases for both views and new controls,
       max window, full long paths, empty/partial/stopping/complete and dialog access.
       Check keyboard, focus, reader announcements, contrast/reduced motion with
