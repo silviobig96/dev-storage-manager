@@ -564,7 +564,7 @@ the controller, not IPC. Overview gets optional scan summary; Workspaces owns
 Quick/Deep/Cancel controls and frozen-write explanation. Existing row availability
 and exact configuration-removal safety copy/focus lifecycle stay independent.
 
-- [ ] Write UI tests for zero enabled roots, loading/reconnect/error, validating,
+- [x] Write UI tests for zero enabled roots, loading/reconnect/error, validating,
       running without fake percentage, cancelling/stopping with live worker,
       complete_within_policy/partial/cancelled and missing allocation. Assert
       exact spec copy, GiB/exact bytes, policy exclusions, covered-by attribution,
@@ -576,19 +576,25 @@ and exact configuration-removal safety copy/focus lifecycle stay independent.
       More than 32 enabled disables starts with the actionable message, leaves
       all saved/enabled rows intact and invokes no subset; Deep says it has limits.
       Counter-only updates do not trigger repeated live-region announcements.
-- [ ] Assert Start fires once on double activation with captured IDs/mode; Deep
+- [x] Assert Start fires once on double activation with captured IDs/mode; Deep
       is an explicit separate intent; nothing starts on render/navigation/config
       change. Cancel remains available until worker stop; no new Start or workspace
       mutation meanwhile. Native picker already open blocks Start consistently.
       Late results do not steal heading/Remove focus or overwrite newer sessions.
-- [ ] Run `npm run test:run -- src/features/scans/ScanSection.test.tsx src/views/WorkspacesView.test.tsx src/App.test.tsx`
+- [x] Run `npm run test:run -- src/features/scans/ScanSection.test.tsx src/views/WorkspacesView.test.tsx src/App.test.tsx`
       RED/GREEN. Reuse existing primitives, live-region semantics and full-width
       layout; keep text wrapping/scroll access, no hidden focusable overflow.
-- [ ] Run frontend suite, lint and build once for the coherent integration.
+- [x] Run frontend suite, lint and build once for the coherent integration.
       Commit `feat: present explicit workspace scan controls and partial results`.
 
 **Exit:** Minimal functional integration only. Phase 03 human visual acceptance
 and inherited layout/zoom are required at Task 11; Phase 02 approval is retained.
+
+Execution receipt: `a0d7495` plus reviewed focus fix `8371051`. Four DOM
+regressions reproduced disabled-invoker focus loss when scan status froze an
+open Remove dialog, then passed with enabled-row/Add/heading fallbacks. Full
+frontend suite now passes 175 tests; lint/build/format checks pass. These are not
+native keyboard, geometry or human visual results. Task 11 remains open.
 
 ## Task 11: Verify functional/native boundaries and request Phase 03 acceptance
 

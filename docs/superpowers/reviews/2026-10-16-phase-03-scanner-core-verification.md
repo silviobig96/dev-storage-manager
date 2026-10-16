@@ -7,8 +7,10 @@ Implementation starts from reviewed design commit
 
 ## Current state
 
-Implementation in progress. Checkpoint 1 code and actual native receipts passed
-independent task review. This is not a whole-phase functional PASS.
+Implementation in progress. Tasks 1–10 and their scoped fixes passed independent
+task review, with actual native authorization and real-engine fixture receipts.
+Task 11 consolidated/current native and human acceptance remains open. This is
+not a whole-phase functional PASS.
 HUMAN VISUAL QA: AWAITING HUMAN REVIEW for the new Phase 03 UI.
 Phase 02 visual approval remains granted and is not reopened.
 
@@ -23,7 +25,7 @@ workspace scan, release or Phase 04 feature is authorized.
 | ------------------------------------ | ----- | ------------------------------------ |
 | Isolated native verification         | 1     | Implemented; reviewed receipts below |
 | Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
-| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–9 reviewed; 10 not executed  |
+| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–10 implemented and reviewed  |
 | Functional/native/human acceptance   | 11    | Not executed                         |
 
 ## Inherited native obligations
@@ -617,3 +619,63 @@ App 19). `npx tsc -b`, scoped ESLint/Prettier and `git diff --check` exited 0.
 Existing host npm user-config warning is not hidden by changing global settings.
 Full frontend/native/current UI gates remain Tasks 10–11; this is not a new native
 receipt or human visual approval.
+
+## Task 10 — explicit scan controls and truthful presentation
+
+Source `a0d7495` plus fix `8371051`; independent review and scoped re-review
+approved after the focus regression correction below. Compact controls and shared
+summary use the existing Workspaces/Overview structure and primitives; no shell,
+theme, route, backend, capability, dependency or schema change. Start copies the
+enabled scope, rejects duplicate activation and explains the 32-root request cap
+without changing saved/enabled rows. Deep remains explicitly bounded.
+
+The UI keeps unknown/reconciling outcomes conservative: workspace writes remain
+disabled, retained metrics are labelled last known, Reconnect only reads, and
+an explicit unresolved Start can reuse only its original IDs/mode. Manual root
+checks, health and navigation stay available. Add/Remove/Enabled/Skip explain
+their live-work restriction; the native picker/configuration guard blocks Start.
+scan_in_progress is mapped as a definite backend rejection, not lost transport.
+
+Logical and allocated coverage stay independent. Null/unavailable, observed zero
+and zero exclusive contribution covered elsewhere are distinct; mixed nonzero
+contributions retain their observed metrics. Real grouped diagnostics generate
+different limit/access/change/allocation/cancellation/exclusion copy and counts.
+Exact bytes accompany BigInt display units; no reclaimable metric, percentage,
+ETA, chart or cleanup action. Meaningful state/error transitions are live, while
+250 ms metric changes do not announce or move focus. Removal safety/focus and
+full paths are preserved. Recovery text now matches “Reconnect to check progress.”
+
+TDD: initial integration failed 8 behavior assertions; empty component stub then
+failed 21 component behavior assertions. Implementation passed focused tests;
+later regressions reproduced scan_in_progress transport misclassification and
+mixed coveredBy contribution wording before their fixes.
+
+- `npm run test:run -- src/features/scans/ScanSection.test.tsx src/views/WorkspacesView.test.tsx src/App.test.tsx`:
+  82 passed.
+- `npm run test:run`: 15 files, 172 passed.
+- `npm run build`: exit 0, TypeScript plus Vite, 53 transformed modules.
+- `npm run lint`: final exit 0 after test callback/async typing fixes; the two
+  affected test files then passed 49 tests. No controller contract was weakened.
+- `npm run format:check` and `git diff --check`: exit 0.
+
+Existing npm user-config noise and Vitest's jsdom performance suggestion are not
+native or product failures; no host settings were changed to silence them.
+These are DOM/test and build receipts only, not browser/native visual review.
+New Phase 03 visual approval and all current native matrix evidence remain
+Task 11. The retired-epoch memory minor remains tracked for final review.
+
+Review found that closing an open Remove dialog after scan status froze writes
+tried to restore focus to its disabled Remove invoker; Add fallback was also
+disabled. Four focused DOM regressions failed before fix `8371051`: Cancel,
+simulated cancel/Escape event, busy original row with usable neighbor, and all
+row/Add actions disabled with heading fallback. The view now checks invoker
+usability and preserves original-row/neighbor order before enabled Add/heading.
+Ordinary enabled-invoker return and safety copy remain unchanged; scan updates
+alone do not move focus. Scoped re-review found the defect addressed without new
+breakage.
+
+Current amended-source receipts: focused Workspaces/App 57 passed;
+`npm run test:run` 15 files/175 passed; `npm run lint`, `npm run build`,
+`npm run format:check` and `git diff --check` exited 0. Earlier 172-test evidence
+belongs to `a0d7495`, not the fix. Actual native keyboard/Escape/focus remains
+Task 11, not proven by dispatching a DOM cancel event.
