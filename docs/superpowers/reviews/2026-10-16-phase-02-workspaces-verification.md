@@ -1,8 +1,9 @@
 # Phase 02 workspace verification
 
 Date: 2026-10-16. Normal checkout: `feat/phase-02-workspaces`.
-Implementation reviewed through `23e4f4e`; comparison base: merged Phase 01.5
-`8c9fc88`, including wide-window correction `8173c67`.
+Historical implementation review through `23e4f4e`; comparison base: merged
+Phase 01.5 `8c9fc88`, including wide-window correction `8173c67`. The acceptance
+closure pass below tests product commit `2bb85b8` at checkout `6ccc839`.
 
 **Implementation:** Tasks 1–8 implemented and reviewed, including the reviewed
 frontend race/recovery and native dialog-focus fixes. Task 9 remains open for
@@ -14,7 +15,7 @@ accessibility coverage is partial and is reported separately.
 automated tests and agent inspection do not constitute human visual approval.
 Historical Phase 01.5 evidence is unchanged; Phase 03 has not been executed.
 
-## Current functional evidence
+## Historical functional evidence
 
 The initial consolidated gates ran against `5656296`. After native QA exposed a
 dialog-focus defect, the affected frontend gates and native bundle were verified
@@ -295,20 +296,124 @@ An earlier native Tab sequence reached Cancel, Remove, HTML content, dialog
 container and Cancel again. This observation does not establish a complete
 focus-trap acceptance pass.
 
+## Acceptance closure pass — 2026-10-16
+
+Started with a clean normal checkout at `6ccc839b0dd3770132a48e1dfe53a2d95eef88a9`,
+on the expected feature branch and unchanged origin. This includes the three
+local feedback-refinement commits after `8827ab9`; none was discarded. Product
+files are identical to `2bb85b88e3d06a20859be314cf4a15f87927b8fa`.
+Its [feedback verification](2026-10-16-workspace-feedback-verification.md) records
+113 frontend / 48 Rust tests and the successful final native bundle build.
+Those results are historical, not suites rerun by this documentation-only pass.
+
+The tested artifact is this checkout's existing
+`target/debug/bundle/macos/dev-storage-manager.app`, executable SHA-256
+`5a5fb4f49f3bfd2d0fbc962958406dd0dc0738698391a16bdd2eb19856000758`.
+Its bundle identifier was checked with `plutil` and remains
+`io.github.silviobig96.devstoragemanager`. No rebuild, product change,
+dependency, permission, test mode or diagnostic command was introduced.
+All new application evidence below is actual macOS/WKWebView, not browser
+emulation or MockRuntime. No new browser checks were required.
+
+| Check                             | Result                                          | Actual environment / evidence                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rapid picker activation           | PASS                                            | Triple-click Add showed one native sheet. Cancel returned to the unchanged empty list; double-click Add reopened one sheet normally. Only the controlled fixture was subsequently selected.                                                                                                                                                                     |
+| Complete modal keyboard cycle     | PASS for exercised states                       | Six forward and six reverse steps in the initial window, then a complete forward/reverse cycle at 760 × 640 CSS. Cancel → Remove → WK document → dialog container → Cancel; reverse traversed the same set. No background action received keyboard focus.                                                                                                       |
+| Modal background and cancellation | PASS                                            | Clicking the dimmed sidebar did not navigate; the modal remained. Escape and explicit Cancel both preserved the row and restored its actual Remove invoker. Narrow-window Enter opened the same dialog from the keyboard.                                                                                                                                       |
+| Long-path actions, ordinary zoom  | PASS at measured size                           | At 760 × 640 CSS, full Unicode path wrapped; Check was invoked, Tab/Enter reached Remove, Shift+Tab reached Check and Enabled, and Space toggled Enabled. The value was restored. This is not 200% evidence.                                                                                                                                                    |
+| Maximized appearance/layout       | PASS                                            | Both native OS light and dark; both views at measured 1728 × 969 CSS. Expected/actual structural width 1456 px, section widths 1456 px, no main/document horizontal overflow. Overview empty centering delta 0 px.                                                                                                                                              |
+| Smaller native appearance/layout  | Partial                                         | Dark, both views at human-resized 760 × 640 CSS: expected/actual structural/section width 544 px, no main/document horizontal overflow, Overview centering delta 0 px. Initial dark viewport was 1100 × 688 CSS, not 1100 × 720.                                                                                                                                |
+| Actual screen reader              | PASS, human-reported scope                      | VoiceOver was enabled with explicit permission. Asked to check list → name → full path → state → Enabled → Check → Remove, the human replied that it works and requested VoiceOver off. The agent cannot hear/transcribe speech; AX inspection alone is not the evidence for this result. This does not approve the whole UI or every announcement/fault state. |
+| Increased contrast                | PASS for inspected dark view                    | OS setting changed from off to on with permission; WK `prefers-contrast: more` became true. Actual controls, separators, text and focus were inspected/captured. Restored off.                                                                                                                                                                                  |
+| Reduced motion                    | PASS for exercised navigation                   | OS setting changed from off to on with permission; WK `prefers-reduced-motion: reduce` became true, active animation count was 0, and navigation to Overview worked. Restored off.                                                                                                                                                                              |
+| Unauthorized caller/origin        | Still pending; partial native boundary evidence | Actual main `get_app_health` returned schema 2. `plugin:webview\|create_webview` was denied for lack of `core:webview:allow-create-webview`. No second WKWebView was created, so this is not an invocation from an unauthorized caller/origin.                                                                                                                  |
+| Actual 200% zoom                  | Pending                                         | Native `plugin:webview\|set_webview_zoom` with value 2 was denied for lack of `core:webview:allow-set-webview-zoom`. Existing View menu has no page zoom control. No CSS zoom, transform, browser substitute or new grant was used.                                                                                                                             |
+| Human visual approval             | AWAITING HUMAN REVIEW                           | VoiceOver confirmation and authorization to change preferences do not grant general visual approval.                                                                                                                                                                                                                                                            |
+
+Native Web Inspector was operated through its existing UI, evaluating read-only
+DOM geometry/media queries and the specific IPC smoke calls above. Dimensions
+come from `innerWidth`/`innerHeight`, not capture pixels. Main interior is
+`clientWidth - paddingLeft - paddingRight`; view/section rectangles were compared
+against it. The measured maximized viewport is not relabelled 1600 × 900.
+Attempts to drag the window edge did not change its geometry; `window.resizeTo`
+also left it unchanged. Rather than continue retrying, the human reduced it;
+that produced 760 × 640, not the exact planned small viewport.
+
+The human separately authorized temporary native light appearance. Original
+appearance was Dark, not Automatic; it was restored immediately when requested.
+Final WK queries returned `dark: true`, `contrast: false`, `motion: false`;
+System Settings also confirmed VoiceOver off. No other preference was changed.
+
+The only new configured root was a controlled temporary Unicode/long-path
+fixture. Only its configuration record was removed through the native dialog;
+the initial zero-workspace state returned with Add focused. Its directory and
+sentinel remain intact and the sentinel SHA-256 before/after matches. No personal
+workspace was selected or modified, and no real database was reset.
+Private native captures remain outside Git; no capture or local inventory is
+included in this commit. No product defect was established or corrected in this
+pass. Earlier focus defects/fixes above remain historical evidence.
+
+Closure-pass command evidence: `git rev-parse --show-toplevel`,
+`git status --short --branch`, `git remote -v`, `git log -5`, and
+`git diff --quiet 2bb85b8..HEAD -- src crates src-tauri Cargo.toml Cargo.lock package.json package-lock.json`
+confirmed the expected checkout and unchanged tested product. `plutil -extract
+CFBundleIdentifier raw` checked the bundle's Info.plist; `shasum -a 256` identified
+the executable and matched the fixture sentinel before/after configuration
+removal. Scoped `npx prettier --write` formatted only this record and the plan;
+`npm run format:check` and `git diff --check` exited 0. The new feedback-record
+link resolves. Final diff inspection includes only these two documentation
+files; no product suites were rerun solely for updating evidence.
+
 ## Remaining acceptance checks
 
 The following remain open and cannot be inferred from automated/browser results:
 
-- Rapid native picker activation without a second panel.
 - Actual adversarial WKWebView other-origin/webview ACL denial smoke checks;
-  successful local main-window flows are verified above.
-- Exact native light/dark CSS-size matrix, 200% zoom with all long-path row
-  actions reachable, complete dialog focus trapping and actual screen-reader
-  list/path reading order. Maximized dark native views were inspected, but
-  native CSS dimensions and native light appearance were not established.
-- Increased contrast and reduced motion inspection. No global OS preference was
-  changed to perform these checks.
+  denying creation of that caller is useful but not equivalent evidence.
+- Exact native light/dark 760 × 520, 1100 × 720 and 1600 × 900 CSS matrix,
+  and real 200% zoom with all long-path actions reachable. Maximized native
+  light/dark and the dark 760 × 640 case are now measured above.
 - Explicit human inspection/approval of the running Phase 02 UI.
+
+### Reproducible follow-up for the unresolved checks
+
+1. In this same debug bundle, use a controlled temporary long-path fixture,
+   never a personal repository. Manually resize the window; open existing Web
+   Inspector with Option-Command-I and evaluate
+   `JSON.stringify({width:innerWidth,height:innerHeight})`. Adjust until each
+   exact CSS size above is reached; native titlebar height is outside those
+   measurements (observed 32 px). Check both views, full-width sections,
+   separators, centered empty states and horizontal overflow. Repeat native
+   light only with permission, restoring Dark afterward. Do not infer any
+   size from a Retina capture. The current UI automation cannot reliably drag
+   the border; human resizing is required for this remaining matrix.
+2. Real 200% requires an existing native page-zoom/debugger control that can set
+   WKWebView `pageZoom` to 2 without changing production grants. None is exposed
+   by the available app/tool controls. A developer with an authorized local
+   native debugger can set `pageZoom = 2.0` on the main WKWebView on its main
+   thread, verify that value, then Tab/Shift+Tab and activate every long-path
+   action, scroll all content/dialog copy, and restore `pageZoom = 1.0`. Do not
+   use CSS scaling, an OS screen magnifier or inspector-UI zoom as a substitute.
+   Debugger attachment and this procedure were not performed here; without
+   that controlled access this acceptance item stays blocked, not passed.
+3. Adversarial native IPC needs an independently labelled WKWebView in `main`,
+   another window, and a remote-origin WK context using the unchanged generated
+   authority. The current app cannot create them through JS, as the native
+   denial proves. A developer-controlled local native test/debug session must
+   create those callers from Rust/native context, without adding JS permissions
+   or distributing a test mode. From each, invoke the seven registered commands
+   with valid-shaped fixture-only arguments; require ACL rejection before any
+   handler/picker/database work. Also check a main-labelled webview in a wrong
+   containing window fails its explicit guard. Use an isolated temporary app
+   database, verify zero mutation/no picker, and restore/close test contexts.
+   The present tools expose no such native caller-creation/debugger interface;
+   no harness was built to bypass this limitation. MockRuntime results remain
+   separate. This procedure needs that bounded native integration environment,
+   not new production capabilities or a broad automation infrastructure.
+4. Request explicit visual approval of the running Phase 02 UI separately.
+   The human's VoiceOver response closes only the requested screen-reader
+   reading-order check. Phase 02 and Task 9 remain incomplete until the above
+   native criteria and general visual acceptance are resolved.
 
 Automated tests cover loading, empty, retryable error, failed SQLite writes with
 no false success, missing/denied/reappeared root mappings and health regression.

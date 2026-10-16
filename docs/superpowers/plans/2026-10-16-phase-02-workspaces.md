@@ -555,6 +555,29 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
       reader list/path reading, increased contrast and reduced motion where possible.
       Do not change global macOS preferences without permission. Record unsupported
       or unavailable conditions as pending, separately from automated coverage.
+
+  Acceptance-closure evidence at product `2bb85b8`, checkout `6ccc839`:
+
+  - [x] Rapid native activation, one panel, cancellation and normal reopening.
+  - [x] Native complete Tab/Shift+Tab modal cycle, background interaction block,
+        Escape/Cancel and actual invoker restoration, including a long-path row.
+  - [x] Native maximized light/dark both-view measurements: 1728 × 969 CSS,
+        structural/section width 1456 px, no horizontal overflow, Overview
+        empty-state centering delta 0 px.
+  - [x] Native smaller dark both-view measurements: 760 × 640 CSS, structural/
+        section width 544 px, no horizontal overflow; long-path actions operable.
+  - [x] Actual VoiceOver reading-order check confirmed by the human; VoiceOver
+        restored off at their request. Not general human visual approval.
+  - [x] Authorized OS increased contrast and reduced motion inspected natively;
+        propagation measured in WKWebView and original values restored.
+  - [ ] Exact native light/dark size matrix and actual 200% page zoom.
+  - [ ] Actual other-caller/origin WKWebView invocation-denial checks. Native
+        denial of second-webview creation alone does not satisfy this criterion.
+  - [ ] Explicit human visual acceptance of the running Phase 02 UI.
+
+  See the verification record's acceptance closure and reproducible follow-up.
+  Aggregate items above stay unchecked while their partial criteria remain open.
+
 - [x] Record loading/empty/error, SQLite failure/no false success, missing/denied/
       reappeared observations and health regression. A simulated native picker or
       forced fixture state is labelled as such. No production mock mode is added.
@@ -590,7 +613,14 @@ native/accessibility checks. Real native picker/add/duplicate, restart,
 enabled/manual availability, remove-only-configuration and unchanged fixture
 sentinel flows were exercised, with both maximized dark views inspected. The
 native exact-size/light/200% matrix, rapid activation, adversarial native ACL,
-full focus trap, screen reader and OS contrast/motion checks remain pending.
+full focus trap, screen reader and OS contrast/motion checks were pending at
+that historical checkpoint. The later closure pass at checkout `6ccc839`
+resolved rapid activation, the exercised modal cycle/background/focus checks,
+human-confirmed VoiceOver reading order, authorized contrast/motion inspection,
+and measured maximized native light/dark layout. It also measured dark
+760 × 640 and its long-path actions. The exact planned native matrix, real
+200% page zoom, adversarial caller/origin checks and general human visual
+acceptance remain pending; see the granular acceptance checklist above.
 Partially exercised checklist items remain
 unchecked. `VISUAL QA: AWAITING HUMAN REVIEW`; the phase is not complete and
 Phase 03 has not been executed.
