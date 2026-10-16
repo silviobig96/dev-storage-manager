@@ -928,3 +928,138 @@ fn scan_quantity_diagnostic_and_publication_stops() {
     );
     assert_eq!(fs.counters.lock().unwrap().live, 0);
 }
+
+// Catches losing allocation-only uncertainty at any directory level or duplicate boundary.
+#[test]
+fn scan_nested_duplicates_preserve_allocation_uncertainty() {
+    for mixed in [false, true] {
+        for duplicate_file in [false, true] {
+            let mut fs = Filesystem::default();
+            fs.directory(
+                1,
+                vec![
+                    entry(2, EntryKind::Directory, 0),
+                    entry(99, EntryKind::Directory, 0),
+                ],
+            );
+            fs.directory(2, vec![entry(3, EntryKind::Directory, 0)]);
+            let mut unknown = entry(10, EntryKind::RegularFile, 9);
+            unknown.allocated_bytes = None;
+            let mut descendants = vec![unknown];
+            if mixed {
+                descendants.push(entry(11, EntryKind::RegularFile, 4));
+            }
+            fs.directory(3, descendants);
+            // A later observation must retain the first allocation uncertainty,
+            // even if its fresh metadata now reports an allocation value.
+            let mut repeated = vec![if duplicate_file {
+                entry(10, EntryKind::RegularFile, 9)
+            } else {
+                entry(3, EntryKind::Directory, 0)
+            }];
+            if mixed {
+                repeated.push(entry(12, EntryKind::RegularFile, 2));
+            }
+            fs.directory(4, repeated);
+            fs.directory(99, vec![]);
+            let report = scan(
+                vec![
+                    root(6, 99),
+                    root(5, 3),
+                    root(4, 2),
+                    root(3, 4),
+                    root(2, 4),
+                    root(1, 1),
+                ],
+                ScanMode::Quick,
+                &fs,
+                &ScanControl::new(ScanMode::Quick),
+                &mut |_| {},
+            );
+            assert_eq!(report.state, ScanState::Partial);
+            assert_eq!(
+                report.progress.metrics.logical_coverage,
+                Coverage::CompleteWithinPolicy
+            );
+            assert_eq!(
+                report.progress.metrics.observed_logical_bytes,
+                DecimalQuantity(if mixed { 15 } else { 9 })
+            );
+            for row in &report.progress.workspaces[..5] {
+                let metrics = row.metrics.as_ref().unwrap();
+                assert_eq!(row.state, WorkspaceScanState::Partial);
+                assert_eq!(row.coverage, Coverage::Partial);
+                assert_eq!(metrics.logical_coverage, Coverage::CompleteWithinPolicy);
+                assert_eq!(metrics.unmeasured_bytes, Some(DecimalQuantity(0)));
+                assert_eq!(metrics.unmeasured_entries_lower_bound, DecimalQuantity(0));
+                if mixed && row.workspace_id.get() <= 2 {
+                    assert_eq!(metrics.allocated_coverage, Coverage::Partial);
+                    assert_eq!(
+                        metrics.observed_allocated_bytes,
+                        Some(DecimalQuantity(if row.workspace_id.get() == 1 {
+                            4
+                        } else {
+                            2
+                        }))
+                    );
+                } else {
+                    assert_eq!(metrics.allocated_coverage, Coverage::Unavailable);
+                    assert_eq!(metrics.observed_allocated_bytes, None);
+                }
+            }
+            assert_eq!(
+                report.progress.workspaces[2].covered_by_workspace_ids,
+                vec![root(2, 4).id]
+            );
+            assert_eq!(
+                report.progress.workspaces[3].covered_by_workspace_ids,
+                vec![root(1, 1).id]
+            );
+            let empty = &report.progress.workspaces[5];
+            assert_eq!(empty.state, WorkspaceScanState::Completed);
+            assert_eq!(empty.coverage, Coverage::CompleteWithinPolicy);
+            assert_eq!(
+                empty.metrics.as_ref().unwrap().observed_allocated_bytes,
+                Some(DecimalQuantity(0))
+            );
+            assert_eq!(
+                empty.metrics.as_ref().unwrap().observed_logical_bytes,
+                DecimalQuantity(0)
+            );
+            assert_eq!(empty.covered_by_workspace_ids, vec![root(1, 1).id]);
+        }
+    }
+}
+
+// Catches allocation-only propagation accidentally clearing genuine logical omissions.
+#[test]
+fn scan_nested_allocation_uncertainty_preserves_logical_omissions() {
+    let mut fs = Filesystem::default();
+    fs.directory(1, vec![entry(2, EntryKind::Directory, 0)]);
+    fs.directory(2, vec![entry(3, EntryKind::Directory, 0)]);
+    let mut unknown = entry(10, EntryKind::RegularFile, 9);
+    unknown.allocated_bytes = None;
+    fs.directory(3, vec![unknown]);
+    fs.directories.get_mut(&3).unwrap().finish_error = Some(ScanIoError::Diagnostic(
+        ScanDiagnosticCode::ChangedDuringScan,
+    ));
+    let report = scan(
+        vec![root(3, 3), root(2, 2), root(1, 1)],
+        ScanMode::Quick,
+        &fs,
+        &ScanControl::new(ScanMode::Quick),
+        &mut |_| {},
+    );
+    assert_eq!(
+        report.progress.metrics.observed_logical_bytes,
+        DecimalQuantity(9)
+    );
+    for row in report.progress.workspaces {
+        let metrics = row.metrics.unwrap();
+        assert_eq!(row.coverage, Coverage::Partial);
+        assert_eq!(metrics.logical_coverage, Coverage::Partial);
+        assert_eq!(metrics.allocated_coverage, Coverage::Unavailable);
+        assert_eq!(metrics.observed_allocated_bytes, None);
+        assert_eq!(metrics.unmeasured_bytes, None);
+    }
+}

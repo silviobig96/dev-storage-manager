@@ -211,6 +211,7 @@ struct Frame {
     identity: ObjectIdentity,
     link: Option<ScanEntry>,
     partial: bool,
+    allocation_incomplete: bool,
 }
 struct Engine {
     roots: Vec<StoredWorkspace>,
@@ -417,13 +418,17 @@ impl Engine {
             cursor,
             link: None,
             partial: false,
+            allocation_incomplete: false,
         });
         let outcome = self.walk_stack(owner, &mut stack, control, publish);
         if outcome.is_err() {
             self.omission(owner, &mut stack, 0)?;
             for frame in &stack {
-                self.accounting
-                    .finish_directory(frame.identity, Coverage::Partial);
+                self.accounting.finish_directory(
+                    frame.identity,
+                    Coverage::Partial,
+                    frame.allocation_incomplete,
+                );
             }
         }
         // Unconditional RAII close; no finish syscalls after a stop.
@@ -513,13 +518,13 @@ impl Engine {
                     let identity = entry.identity.expect("accounted identity");
                     if stack.len() > self.limits.max_child_depth() {
                         self.accounting
-                            .finish_directory(identity, Coverage::Partial);
+                            .finish_directory(identity, Coverage::Partial, false);
                         self.omission(owner, stack, 1)?;
                         self.diagnostic(owner, ScanDiagnosticCode::DepthLimit)?;
                     } else {
                         if stack.len() >= self.limits.max_descriptors() {
                             self.accounting
-                                .finish_directory(identity, Coverage::Partial);
+                                .finish_directory(identity, Coverage::Partial, false);
                             self.omission(owner, stack, 1)?;
                             return Err(StopReason::DescriptorLimit);
                         }
@@ -529,8 +534,11 @@ impl Engine {
                         match result {
                             Ok(cursor) => {
                                 if cursor.identity() != identity {
-                                    self.accounting
-                                        .finish_directory(identity, Coverage::Partial);
+                                    self.accounting.finish_directory(
+                                        identity,
+                                        Coverage::Partial,
+                                        false,
+                                    );
                                     self.omission(owner, stack, 1)?;
                                     self.diagnostic(owner, ScanDiagnosticCode::ChangedDuringScan)?;
                                 } else {
@@ -539,13 +547,17 @@ impl Engine {
                                         identity,
                                         link: Some(entry),
                                         partial: false,
+                                        allocation_incomplete: false,
                                     });
                                 }
                             }
                             Err(ScanIoError::Stopped(reason)) => return Err(reason),
                             Err(ScanIoError::Diagnostic(code)) => {
-                                self.accounting
-                                    .finish_directory(identity, Coverage::Partial);
+                                self.accounting.finish_directory(
+                                    identity,
+                                    Coverage::Partial,
+                                    false,
+                                );
                                 self.omission(owner, stack, 1)?;
                                 self.diagnostic(owner, code)?;
                             }
@@ -573,14 +585,20 @@ impl Engine {
                     self.diagnostic(owner, code)?;
                 }
                 ObservationOutcome::Duplicate {
-                    directory_coverage: Some(coverage),
+                    directory_logical_coverage,
+                    allocation_incomplete,
                     ..
-                } if coverage != Coverage::CompleteWithinPolicy => {
+                } => {
                     for frame in stack.iter_mut() {
-                        frame.partial = true;
+                        frame.partial |= directory_logical_coverage
+                            .is_some_and(|coverage| coverage != Coverage::CompleteWithinPolicy);
+                        frame.allocation_incomplete |= allocation_incomplete;
                     }
                 }
                 ObservationOutcome::File if entry.allocated_bytes.is_none() => {
+                    for frame in stack.iter_mut() {
+                        frame.allocation_incomplete = true;
+                    }
                     self.diagnostic(owner, ScanDiagnosticCode::AllocationUnknown)?;
                 }
                 _ => {}
@@ -598,11 +616,11 @@ impl Engine {
             } else {
                 Coverage::CompleteWithinPolicy
             },
+            frame.allocation_incomplete,
         );
-        if frame.partial {
-            for ancestor in stack {
-                ancestor.partial = true;
-            }
+        for ancestor in stack {
+            ancestor.partial |= frame.partial;
+            ancestor.allocation_incomplete |= frame.allocation_incomplete;
         }
     }
 }

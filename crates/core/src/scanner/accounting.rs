@@ -25,7 +25,10 @@ pub enum ObservationOutcome {
     Unmeasured,
     Duplicate {
         owner: WorkspaceId,
-        directory_coverage: Option<Coverage>,
+        /// Directory traversal coverage only; not overall measurement coverage.
+        directory_logical_coverage: Option<Coverage>,
+        /// Inherited from the first observation of either a file or a subtree.
+        allocation_incomplete: bool,
     },
 }
 
@@ -39,7 +42,8 @@ struct IdentitySlot {
     owner: i64,
     dependents: u32,
     state: u8,
-    padding: [u8; 11],
+    allocation_incomplete: bool,
+    padding: [u8; 10],
 }
 
 impl IdentitySlot {
@@ -53,10 +57,11 @@ impl IdentitySlot {
         owner: 0,
         dependents: 0,
         state: 0,
-        padding: [0; 11],
+        allocation_incomplete: false,
+        padding: [0; 10],
     };
 
-    fn directory_coverage(self) -> Option<Coverage> {
+    fn directory_logical_coverage(self) -> Option<Coverage> {
         match self.state {
             2 | 4 => Some(Coverage::Partial),
             3 => Some(Coverage::CompleteWithinPolicy),
@@ -300,21 +305,23 @@ impl ScanAccounting {
             if owner != first_owner {
                 root.covered_by |= 1 << first_index;
             }
-            let directory_coverage = slot.directory_coverage();
-            if directory_coverage.is_some_and(|coverage| coverage != Coverage::CompleteWithinPolicy)
+            let directory_logical_coverage = slot.directory_logical_coverage();
+            if directory_logical_coverage
+                .is_some_and(|coverage| coverage != Coverage::CompleteWithinPolicy)
             {
                 root.counters.incomplete = true;
                 global.incomplete = true;
             }
-            if directory_coverage.is_some() {
+            if directory_logical_coverage.is_some() {
                 slot.dependents |= 1 << index;
             }
-            if slot.state == 6 {
+            if slot.allocation_incomplete {
                 root.counters.allocation_incomplete = true;
             }
             ObservationOutcome::Duplicate {
                 owner: first_owner,
-                directory_coverage,
+                directory_logical_coverage,
+                allocation_incomplete: slot.allocation_incomplete,
             }
         } else {
             if self.records >= self.max_records {
@@ -333,7 +340,9 @@ impl ScanAccounting {
                 } else {
                     1
                 },
-                padding: [0; 11],
+                allocation_incomplete: metadata.facts.kind == EntryKind::RegularFile
+                    && metadata.allocated_bytes.is_none(),
+                padding: [0; 10],
             };
             if metadata.facts.kind == EntryKind::Directory {
                 ObservationOutcome::Directory
@@ -375,9 +384,15 @@ impl ScanAccounting {
         })
     }
 
-    /// Only explicit completion makes a directory complete; repeats before or
-    /// after incomplete completion retain partial coverage without a child tree.
-    pub fn finish_directory(&mut self, identity: ObjectIdentity, coverage: Coverage) {
+    /// Finalize traversal separately from allocation uncertainty in its subtree.
+    /// Neither an incomplete logical scope nor allocation uncertainty may be
+    /// upgraded by a later finish. No descendant catalogue or subtotal is retained.
+    pub fn finish_directory(
+        &mut self,
+        identity: ObjectIdentity,
+        logical_coverage: Coverage,
+        allocation_incomplete: bool,
+    ) {
         let Ok(index) = self.locate(identity) else {
             return;
         };
@@ -392,25 +407,27 @@ impl ScanAccounting {
                 .pending_directories -= 1;
         }
         let slot = &mut self.slots[index];
-        if slot.directory_coverage().is_none() {
+        if slot.directory_logical_coverage().is_none() {
             return;
         }
-        if matches!(slot.state, 4 | 5) {
-            return;
+        if !matches!(slot.state, 4 | 5) {
+            slot.state = match logical_coverage {
+                Coverage::CompleteWithinPolicy => 3,
+                Coverage::Partial => 4,
+                Coverage::Unavailable => 5,
+            };
         }
-        slot.state = match coverage {
-            Coverage::CompleteWithinPolicy => 3,
-            Coverage::Partial => 4,
-            Coverage::Unavailable => 5,
-        };
-        if coverage != Coverage::CompleteWithinPolicy {
-            for (index, root) in self.roots.iter_mut().enumerate() {
-                if slot.dependents & (1 << index) != 0 {
-                    root.counters.incomplete = true;
-                }
+        let logical_incomplete =
+            slot.directory_logical_coverage() != Some(Coverage::CompleteWithinPolicy);
+        slot.allocation_incomplete |= allocation_incomplete || logical_incomplete;
+        for (index, root) in self.roots.iter_mut().enumerate() {
+            if slot.dependents & (1 << index) != 0 {
+                root.counters.incomplete |= logical_incomplete;
+                root.counters.allocation_incomplete |= slot.allocation_incomplete;
             }
-            self.global.incomplete = true;
         }
+        self.global.incomplete |= logical_incomplete;
+        self.global.allocation_incomplete |= slot.allocation_incomplete;
     }
 }
 
@@ -458,7 +475,8 @@ mod tests {
             accounting.observe(owner(9), &file),
             Ok(ObservationOutcome::Duplicate {
                 owner: owner(7),
-                directory_coverage: None,
+                directory_logical_coverage: None,
+                allocation_incomplete: false,
             })
         );
         assert_eq!(accounting.snapshot().metrics.observed_logical_bytes.0, 12);
@@ -484,12 +502,13 @@ mod tests {
             accounting.observe(owner(7), &directory),
             Ok(ObservationOutcome::Directory)
         );
-        accounting.finish_directory(directory.identity.unwrap(), Coverage::Partial);
+        accounting.finish_directory(directory.identity.unwrap(), Coverage::Partial, false);
         assert_eq!(
             accounting.observe(owner(9), &directory),
             Ok(ObservationOutcome::Duplicate {
                 owner: owner(7),
-                directory_coverage: Some(Coverage::Partial),
+                directory_logical_coverage: Some(Coverage::Partial),
+                allocation_incomplete: true,
             })
         );
         assert_eq!(accounting.snapshot().metrics.unique_directories.0, 1);
@@ -607,7 +626,11 @@ mod tests {
         directory.facts.kind = EntryKind::Directory;
         accounting.observe(owner(7), &directory).unwrap();
         assert_eq!(accounting.snapshot().coverage, Coverage::Partial);
-        accounting.finish_directory(directory.identity.unwrap(), Coverage::CompleteWithinPolicy);
+        accounting.finish_directory(
+            directory.identity.unwrap(),
+            Coverage::CompleteWithinPolicy,
+            false,
+        );
         assert_eq!(
             accounting.snapshot().coverage,
             Coverage::CompleteWithinPolicy
@@ -619,8 +642,12 @@ mod tests {
         directory.identity.as_mut().unwrap().file_id = 2;
         accounting.observe(owner(7), &directory).unwrap();
         accounting.observe(owner(9), &directory).unwrap();
-        accounting.finish_directory(directory.identity.unwrap(), Coverage::Partial);
-        accounting.finish_directory(directory.identity.unwrap(), Coverage::CompleteWithinPolicy);
+        accounting.finish_directory(directory.identity.unwrap(), Coverage::Partial, false);
+        accounting.finish_directory(
+            directory.identity.unwrap(),
+            Coverage::CompleteWithinPolicy,
+            false,
+        );
         assert_eq!(
             accounting.workspace_snapshot(owner(9)).unwrap().coverage,
             Coverage::Partial
@@ -628,6 +655,53 @@ mod tests {
         assert_eq!(
             accounting.workspace_snapshot(owner(7)).unwrap().coverage,
             Coverage::Partial
+        );
+    }
+
+    // Catches losing allocation uncertainty for existing dependents, late duplicates,
+    // or a later finish that attempts to turn an uncertain subtree into known zero.
+    #[test]
+    fn scan_accounting_directory_allocation_uncertainty_is_independent_and_sticky() {
+        let mut accounting = ScanAccounting::with_capacity(4, 4).unwrap();
+        let mut directory = entry(1, 0, None);
+        directory.facts.kind = EntryKind::Directory;
+        let identity = directory.identity.unwrap();
+        accounting.observe(owner(7), &directory).unwrap();
+        accounting.finish_directory(identity, Coverage::CompleteWithinPolicy, false);
+        accounting.observe(owner(9), &directory).unwrap();
+        assert_eq!(
+            accounting.workspace_snapshot(owner(9)).unwrap().coverage,
+            Coverage::CompleteWithinPolicy
+        );
+        accounting.finish_directory(identity, Coverage::CompleteWithinPolicy, true);
+        accounting.finish_directory(identity, Coverage::CompleteWithinPolicy, false);
+        assert_eq!(
+            accounting.observe(owner(11), &directory),
+            Ok(ObservationOutcome::Duplicate {
+                owner: owner(7),
+                directory_logical_coverage: Some(Coverage::CompleteWithinPolicy),
+                allocation_incomplete: true,
+            })
+        );
+        for id in [7, 9, 11] {
+            let snapshot = accounting.workspace_snapshot(owner(id)).unwrap();
+            assert_eq!(snapshot.coverage, Coverage::Partial);
+            assert_eq!(
+                snapshot.metrics.logical_coverage,
+                Coverage::CompleteWithinPolicy
+            );
+            assert_eq!(snapshot.metrics.observed_logical_bytes, DecimalQuantity(0));
+            assert_eq!(snapshot.metrics.allocated_coverage, Coverage::Unavailable);
+            assert_eq!(snapshot.metrics.observed_allocated_bytes, None);
+            assert_eq!(snapshot.metrics.unmeasured_bytes, Some(DecimalQuantity(0)));
+        }
+        assert_eq!(
+            accounting.snapshot().metrics.logical_coverage,
+            Coverage::CompleteWithinPolicy
+        );
+        assert_eq!(
+            accounting.snapshot().metrics.allocated_coverage,
+            Coverage::Unavailable
         );
     }
 
