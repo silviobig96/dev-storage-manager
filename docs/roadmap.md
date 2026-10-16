@@ -45,12 +45,18 @@ Implement optional user-selected workspace configuration for zero, one, or many 
 
 ## Phase 03 — Read-only Scanner Core
 
-**Not started.** Future design/planning may advance in a separate task, but must
-include [P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
-as a prerequisite to integrating the real scanner. It cannot assume native PASS
-or defer the check until cleanup. If this phase changes UI, it also inherits the
-layout/zoom acceptance limits above. No Phase 03 spec, plan or implementation is
-created by the Phase 02 acceptance task.
+**Design and plan prepared for review; implementation not started.** See the
+[scanner specification](superpowers/specs/2026-10-16-phase-03-scanner-core-design.md)
+and [11-task plan](superpowers/plans/2026-10-16-phase-03-scanner-core.md).
+The proposal measures explicit enabled roots using bounded metadata-only
+traversal, memory-only sessions and minimal existing-view controls, without
+providers or history. Its isolated native verification checkpoint must resolve
+[P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+before real scanner integration, and prove native denial for the four proposed
+commands. It cannot assume native PASS or defer the check until cleanup.
+P02 native layout/zoom remain open and must pass before accepting this proposed
+UI-modifying phase. The documentary task closes none of these checks and does
+not extend the limited Phase 02 development acceptance to Phase 03.
 
 Implement bounded quick-scan coordination, explicit deep-scan requests, cancellation, progress, size accounting, diagnostics, and synthetic-filesystem tests. Establish protected policy enforcement before scanning real provider locations.
 

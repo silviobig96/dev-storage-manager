@@ -164,13 +164,33 @@ are implemented through Tasks 1–8: configuration-only workspace use cases, a
 Rust-owned native folder picker, bounded root metadata validation, schema-2
 transactional SQLite persistence, seven constrained application commands, and
 Overview/Workspaces configuration UI. Consolidated functional verification
-passes; native coverage remains partial and human visual QA is awaiting review, so
-Phase 02 is not complete. The [verification record](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md)
+passes; human visual QA is PASS by explicit approval. Phase 02 is accepted for
+development with open native verification, not for distribution, under its
+[specific acceptance decision](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16).
+The [verification record](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md)
 separates automated, browser, native and human evidence. Removing a workspace
 removes only its application-owned configuration, never its folder. The
 Phase 01/01.5 single-health-command restriction is historical phase scope.
 Availability is an explicit temporary root observation, not a scan or permission
 guarantee. Phase 03 scanner behavior remains unimplemented.
+
+## Phase 03 proposed scanner boundary
+
+The [scanner specification](superpowers/specs/2026-10-16-phase-03-scanner-core-design.md)
+and [task plan](superpowers/plans/2026-10-16-phase-03-scanner-core.md) are proposed,
+not implemented. They add bounded metadata-only core traversal/accounting,
+descriptor-relative macOS I/O, one application-owned session with frozen
+configuration, four main-authorized commands and minimal existing-view controls.
+Only explicit enabled workspace IDs resolve to scope; no content reads,
+providers, cleanup, global scan or automatic start. Measurements are observations,
+not reclaimable space; schema 2 remains unchanged and results stay in memory.
+
+The isolated native test executable must prove inherited and new-command ACL
+rejection before wiring the real scanner. It reuses production registration and
+capabilities, never ships in app/DMG, and adds no product test mode or grants.
+P02 native layout/zoom remain acceptance gates for this proposed UI change;
+none is closed by documentation. The provider/history data flow above describes
+later product architecture, not extra Phase 03 functionality.
 
 ## UI verification boundary
 
