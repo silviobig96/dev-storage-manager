@@ -74,6 +74,41 @@ fn workspace_by_id(
 }
 
 impl Database {
+    /// Resolve only explicit IDs in one bounded read snapshot; absent IDs never widen scope.
+    pub fn scan_roots_by_ids(
+        &self,
+        ids: &[WorkspaceId],
+    ) -> Result<Vec<StoredWorkspace>, WorkspaceFailure> {
+        if ids.len() > 32 {
+            return Err(unavailable());
+        }
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let transaction = self
+            .connection
+            .unchecked_transaction()
+            .map_err(|_| unavailable())?;
+        setup_state(&transaction)?;
+        let placeholders = vec!["?"; ids.len()].join(",");
+        let rows = {
+            let mut statement = transaction.prepare(&format!(
+                "SELECT {WORKSPACE_COLUMNS} FROM workspaces WHERE id IN ({placeholders}) ORDER BY id"
+            )).map_err(|_| unavailable())?;
+            let mapped = statement
+                .query_map(
+                    rusqlite::params_from_iter(ids.iter().map(|id| id.get())),
+                    read_workspace,
+                )
+                .map_err(|_| unavailable())?;
+            mapped
+                .collect::<rusqlite::Result<Vec<_>>>()
+                .map_err(|_| unavailable())?
+        };
+        transaction.commit().map_err(|_| unavailable())?;
+        Ok(rows)
+    }
+
     pub fn workspace_configuration(&self) -> Result<WorkspaceConfiguration, WorkspaceFailure> {
         // One read snapshot keeps the setup decision and rows consistent with concurrent commits.
         let transaction = self
@@ -223,6 +258,36 @@ mod tests {
     use dev_storage_core::workspaces::DirectoryIdentity;
 
     use super::*;
+
+    // Catches broadening missing/empty IDs, wrong numeric ordering and unbounded requests.
+    #[test]
+    fn scan_scope_resolves_ids_without_broadening() {
+        let mut db = Database::open_in_memory().unwrap();
+        let a = added(db.insert_workspace(&root("/a", "/a", "a"), 30).unwrap());
+        let b = added(db.insert_workspace(&root("/b", "/b", "b"), 10).unwrap());
+        let c = added(db.insert_workspace(&root("/c", "/c", "c"), 20).unwrap());
+        db.set_workspace_enabled(b.id, false, 40).unwrap();
+        let rows = db.scan_roots_by_ids(&[c.id, b.id]).unwrap();
+        assert_eq!(rows.iter().map(|r| r.id).collect::<Vec<_>>(), [b.id, c.id]);
+        assert!(!rows[0].enabled);
+        assert!(db.scan_roots_by_ids(&[]).unwrap().is_empty());
+        assert_eq!(
+            db.scan_roots_by_ids(&[a.id, WorkspaceId::try_from(999).unwrap()])
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(db.scan_roots_by_ids(&[a.id, a.id]).unwrap().len(), 1);
+        assert!(db.scan_roots_by_ids(&vec![a.id; 33]).is_err());
+        assert_eq!(db.schema_version().unwrap(), 2);
+        db.connection
+            .execute_batch("DROP TABLE workspaces")
+            .unwrap();
+        assert_eq!(
+            db.scan_roots_by_ids(&[a.id]).unwrap_err().code,
+            WorkspaceErrorCode::PersistenceUnavailable
+        );
+    }
 
     fn root(selected: &str, canonical: &str, identity: &str) -> ValidatedWorkspace {
         ValidatedWorkspace {

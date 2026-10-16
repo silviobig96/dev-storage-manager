@@ -161,6 +161,13 @@ pub struct ScanRequest {
     pub mode: ScanMode,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanStatus {
+    pub epoch: ScanEpoch,
+    pub session: Option<ScanSnapshot>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Coverage {

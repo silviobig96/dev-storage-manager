@@ -4,11 +4,17 @@ use dev_storage_platform::PlatformAdapter;
 use std::sync::Mutex;
 use thiserror::Error;
 
+mod activity;
+mod scans;
 mod workspaces;
+pub use activity::{ActivityGate, WorkspaceChangeGuard};
+pub use scans::ScanRunner;
 
 pub struct ApplicationService<A> {
     adapter: A,
     database: Mutex<Database>,
+    activity: ActivityGate,
+    scans: scans::ScanCoordinator,
 }
 
 impl<A: PlatformAdapter> ApplicationService<A> {
@@ -16,6 +22,8 @@ impl<A: PlatformAdapter> ApplicationService<A> {
         Self {
             adapter,
             database: Mutex::new(database),
+            activity: ActivityGate::default(),
+            scans: scans::ScanCoordinator::new(None),
         }
     }
 

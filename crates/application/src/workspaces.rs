@@ -17,6 +17,22 @@ fn unavailable() -> WorkspaceFailure {
 }
 
 impl<A: PlatformAdapter> ApplicationService<A> {
+    pub fn reserve_workspace_change(
+        &self,
+    ) -> Result<crate::WorkspaceChangeGuard, WorkspaceFailure> {
+        self.activity.try_workspace_change()
+    }
+    pub fn commit_workspace_add(
+        &self,
+        guard: crate::WorkspaceChangeGuard,
+        root: ValidatedWorkspace,
+        now: i64,
+    ) -> Result<WorkspaceInsertOutcome, WorkspaceFailure> {
+        if !self.activity.owns(&guard) {
+            return Err(unavailable());
+        }
+        self.workspace_database()?.insert_workspace(&root, now)
+    }
     fn workspace_database(&self) -> Result<MutexGuard<'_, Database>, WorkspaceFailure> {
         self.database.lock().map_err(|_| unavailable())
     }
@@ -48,10 +64,11 @@ impl<A: PlatformAdapter> ApplicationService<A> {
         root: ValidatedWorkspace,
         now: i64,
     ) -> Result<WorkspaceInsertOutcome, WorkspaceFailure> {
-        self.workspace_database()?.insert_workspace(&root, now)
+        self.commit_workspace_add(self.reserve_workspace_change()?, root, now)
     }
 
     pub fn remove_workspace(&self, id: WorkspaceId) -> Result<(), WorkspaceFailure> {
+        let _guard = self.reserve_workspace_change()?;
         self.workspace_database()?.remove_workspace(id)
     }
 
@@ -61,6 +78,7 @@ impl<A: PlatformAdapter> ApplicationService<A> {
         enabled: bool,
         now: i64,
     ) -> Result<WorkspaceRecord, WorkspaceFailure> {
+        let _guard = self.reserve_workspace_change()?;
         self.workspace_database()?
             .set_workspace_enabled(id, enabled, now)
     }
@@ -84,6 +102,7 @@ impl<A: PlatformAdapter> ApplicationService<A> {
     }
 
     pub fn skip_workspace_setup(&self) -> Result<SetupState, WorkspaceFailure> {
+        let _guard = self.reserve_workspace_change()?;
         self.workspace_database()?.skip_workspace_setup()
     }
 }

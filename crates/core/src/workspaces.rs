@@ -155,6 +155,7 @@ pub struct AvailabilityObservation {
 #[serde(rename_all = "snake_case")]
 pub enum WorkspaceErrorCode {
     OperationInProgress,
+    ScanInProgress,
     InvalidSelection,
     UnsupportedPathEncoding,
     NotDirectory,
@@ -173,6 +174,7 @@ impl WorkspaceErrorCode {
     pub fn message(self) -> &'static str {
         match self {
             Self::OperationInProgress => "Another workspace operation is in progress.",
+            Self::ScanInProgress => "A scan is in progress.",
             Self::InvalidSelection => "Select a local folder.",
             Self::UnsupportedPathEncoding => "This folder's path cannot be represented as UTF-8.",
             Self::NotDirectory => "The selected location is not a folder.",
