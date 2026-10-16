@@ -447,19 +447,19 @@ and `AppManifest::commands` now contain all eleven identically in app and target
 The test target initially uses a counted synthetic ScanRunner rather than a native
 scanner; production runner is not wired until Task 8's exit gate.
 
-- [ ] Write `scan_ipc_contract`: exact start request nesting, mode/ID/epoch
+- [x] Write `scan_ipc_contract`: exact start request nesting, mode/ID/epoch
       parsing and serialized quantities. Reject JS path, options and budget
       fields with deny_unknown_fields on ScanRequest; no arbitrary roots. Same
       request replay, stale epoch, cancel acknowledgement and session_not_found
       are typed, sanitized and authoritative. Preserve health DTO/schema 2.
-- [ ] Extend generated-context MockRuntime tests: all four new commands denied
+- [x] Extend generated-context MockRuntime tests: all four new commands denied
       for ungranted caller/origin before handler; no file/picker/DB/scan calls.
       Actual-parent guard independently tested; local-main fixture paths succeed.
-- [ ] Run `cargo test -p dev-storage-manager scan_ --locked` RED/GREEN, then
+- [x] Run `cargo test -p dev-storage-manager scan_ --locked` RED/GREEN, then
       `cargo check --workspace --all-targets --locked`. Inspect generated
       permissions: four narrow allow entries only, local main webview, no window
       OR grant/remote generic access. No product test handler or public injection.
-- [ ] Rebuild frontend assets if changed, and run the native target with
+- [x] Rebuild frontend assets if changed, and run the native target with
       `--case scanner-acl` using all eleven commands and synthetic scanner
       counters. Require real remote-main/child/other-window denial before work;
       missing transport/timeouts are not PASS. Commit
@@ -468,6 +468,14 @@ scanner; production runner is not wired until Task 8's exit gate.
 
 **Exit:** Both inherited and new-command native ACL evidence exists; a test stub
 is never presented as a production-complete scanner or shipped fake success.
+
+Execution receipt: `81e8c55`, independently reviewed. Actual Wry eleven-command
+matrix exited 0: child/other/external callers denied before handlers, wrong-parent
+guard denied before service, with unchanged database/scan and zero runner delta.
+Authorized four-command controls used one counted synthetic runner, not native
+traversal. Optional native picker cancellation remains unverified and is reported
+separately; it is not counted as authorization PASS. Task 8 may now wire the real
+runner under its own integration tests. No frontend change required asset rebuild.
 
 ## Task 8: Wire the native engine without expanding its authority
 

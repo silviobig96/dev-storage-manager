@@ -19,19 +19,19 @@ workspace scan, release or Phase 04 feature is authorized.
 
 ## Checkpoints
 
-| Checkpoint                           | Tasks | Status                               |
-| ------------------------------------ | ----- | ------------------------------------ |
-| Isolated native verification         | 1     | Implemented; reviewed receipts below |
-| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
-| Gated application/IPC/minimal UI     | 6–10  | Task 6 reviewed; 7–10 not executed   |
-| Functional/native/human acceptance   | 11    | Not executed                         |
+| Checkpoint                           | Tasks | Status                                |
+| ------------------------------------ | ----- | ------------------------------------- |
+| Isolated native verification         | 1     | Implemented; reviewed receipts below  |
+| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed    |
+| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–7 reviewed; 8–10 not executed |
+| Functional/native/human acceptance   | 11    | Not executed                          |
 
 ## Inherited native obligations
 
 - [P02-NATIVE-ACL](2026-10-16-phase-02-workspaces-verification.md#p02-native-acl):
   RESOLVED for the seven existing commands by Checkpoint 1 native evidence.
-  New commands additionally
-  need their own native denial matrix before MetadataScanRunner is wired.
+  The Task 7 eleven-command native denial matrix also passed before
+  MetadataScanRunner integration; its actual receipt is recorded below.
 - [P02-NATIVE-LAYOUT](2026-10-16-phase-02-workspaces-verification.md#p02-native-layout):
   OPEN with new exact populated-view matrix evidence below. Empty Workspaces
   and current Phase 03 controls must still be checked before UI acceptance.
@@ -425,3 +425,85 @@ with all targets/locked/deny warnings passes, and scoped formatting/diff checks
 pass. The 121-test workspace run belongs to `fa4c9c2`, not this fix; final
 consolidated verification remains Task 11. Scoped re-review found the issue
 addressed with no new breakage. Task 6 is complete in its service-only scope.
+
+## Task 7 — constrained IPC and eleven-command native authorization
+
+Source `81e8c550db2297e53f22f9aa35c1bc3077c78df8`; independent task review
+approved spec compliance and quality, no Critical/Important findings. Controller
+also checked the actual native executable hash, unchanged bundle identifier and
+no-runner initialization. Production still uses the no-runner constructor. No real traversal,
+frontend change, dependency/schema/bundle-ID change or generic capability was
+introduced. Four narrow local-main command grants extend the shared handler and
+AppManifest. Actual webview/containing-window guards precede service work.
+The picker now holds the owned configuration reservation through its callback,
+blocking validation and commit, including receiver loss and timeout.
+
+### Actual Wry authorization receipt
+
+```sh
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case scanner-acl
+```
+
+Exit 0 against the final committed source, opt-in native test executable SHA256
+`f48dfc60c376275bb492c2655418b57803c69e84149345b2f56c91a47ec1cbdd`.
+Its runner is counted and synthetic, confined to tests: this proves transport
+and authorization, not metadata-engine integration or normal-bundle operation.
+
+| Commands                     | Child in main | Other window | External origin in actual main | Main in wrong parent |
+| ---------------------------- | ------------- | ------------ | ------------------------------ | -------------------- |
+| All seven inherited commands | ACL denied    | ACL denied   | ACL denied                     | Guard denied         |
+| start_workspace_scan         | ACL denied    | ACL denied   | ACL denied                     | Guard denied         |
+| get_workspace_scan           | ACL denied    | ACL denied   | ACL denied                     | Guard denied         |
+| get_workspace_scan_session   | ACL denied    | ACL denied   | ACL denied                     | Guard denied         |
+| cancel_workspace_scan        | ACL denied    | ACL denied   | ACL denied                     | Guard denied         |
+
+Each of the three unauthorized contexts made eleven valid-shaped actual bridge
+calls: zero tagged shared-handler entries, zero runner delta, identical full
+workspace listing, SQLite bytes and scan status after every call. Wrong-parent
+calls entered eleven guards but performed no service/picker/runner operation.
+Counters identify the actual caller and test case; ordinary React calls do not
+contaminate them. Missing bridge and unsettled-promise controls remained distinct
+failures, never permission PASS. The controlled loopback origin listener stopped
+and joined; no production remote grant changed.
+
+Authorized main controls passed health/schema 2, list and five fixture mutations
+or checks. Six scan invocations exercised all four new commands, one accepted
+session/replay and one runner only. The live cancellation acknowledgment retained
+workerActive=true and finishedAt=null; explicit runner release yielded cancelled
+and inactive. Logical bytes `9007199254740993` and entryAttempts `3` survived IPC.
+
+Allowed-main native picker cancellation was **not verified**. Two bounded
+interactive attempts timed out despite a targeted AX read and one Escape; no
+callback was observed. An intermediate outer PASS with a nested inconclusive
+field is not acceptance evidence and was removed. Final default scanner-acl
+explicitly reports nativePickerPositive=not_exercised. A separate test-only
+`--picker-cancel` opt-in now requires a real cancelled result, unchanged database
+and released reservation; error/timeout exits 1. It adds no product mode or grant.
+Future reproduction: append that flag to the command above and cancel the native
+panel once. This remaining positive-control gap does not replace or contradict
+the completed actual eleven-command denial matrix.
+
+### Focused and build receipts
+
+- `cargo test -p dev-storage-manager scan_ --locked`: RED 0/3, then 1/5;
+  final GREEN 6/0. Tests cover strict request nesting/fields/tokens, replay,
+  stale/conflicting requests, lossless quantities, cancellation, picker ownership
+  and deliberately unavailable production runner.
+- `cargo test -p dev-storage-manager workspace_ --locked`: 10 passed.
+- `cargo test --workspace --locked`: 127 passed (application 25, core 40,
+  Tauri 16, persistence 20, platform 26), doc-tests passed. Later test-harness-only
+  selector ordering was compiled and exercised by the final native run.
+- `cargo check --workspace --all-targets --locked`: exit 0 on final source.
+- `cargo clippy -p dev-storage-manager --all-targets --features native-acceptance,tauri/custom-protocol --locked -- -D warnings`:
+  exit 0, including opt-in target.
+- Scoped rustfmt and `git diff --check`: exit 0.
+- `cargo build -p dev-storage-manager --bin dev-storage-manager --all-features --locked`:
+  exit 0. Normal binary SHA256
+  `da19eebc6bf285fa9f16bd9d73dcf515fa37305c800efc36437631b98c11f15c`;
+  QA marker/report endpoints/case tag/CountedRunner absent. This is not a new
+  app/DMG inspection; final Task 11 must repeat the complete exclusion audit.
+
+No new frontend assets were needed or rebuilt here. No global preference, OS
+permission or personal workspace was changed. New Phase 03 visual QA remains
+awaiting human review. Inherited and new-command native ACL gates plus source
+review now permit Task 8 integration; they do not establish its engine evidence.
