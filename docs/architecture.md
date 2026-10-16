@@ -172,25 +172,36 @@ separates automated, browser, native and human evidence. Removing a workspace
 removes only its application-owned configuration, never its folder. The
 Phase 01/01.5 single-health-command restriction is historical phase scope.
 Availability is an explicit temporary root observation, not a scan or permission
-guarantee. Phase 03 scanner behavior remains unimplemented.
+guarantee. Phase 03 adds the separately authorized manual scanner below.
 
-## Phase 03 proposed scanner boundary
+## Phase 03 read-only scanner boundary
 
 The [scanner specification](superpowers/specs/2026-10-16-phase-03-scanner-core-design.md)
-and [task plan](superpowers/plans/2026-10-16-phase-03-scanner-core.md) are proposed,
-not implemented. They add bounded metadata-only core traversal/accounting,
+and [task plan](superpowers/plans/2026-10-16-phase-03-scanner-core.md) are implemented
+through Tasks 1–10; final acceptance remains open. They add bounded metadata-only core traversal/accounting,
 descriptor-relative macOS I/O, one application-owned session with frozen
 configuration, four main-authorized commands and minimal existing-view controls.
 Only explicit enabled workspace IDs resolve to scope; no content reads,
 providers, cleanup, global scan or automatic start. Measurements are observations,
 not reclaimable space; schema 2 remains unchanged and results stay in memory.
 
-The isolated native test executable must prove inherited and new-command ACL
-rejection before wiring the real scanner. It reuses production registration and
+Core scanner modules own contracts, immutable measurement protection, bounded
+identity accounting, diagnostics and streaming traversal. The macOS scanner
+adapter owns descriptor-relative metadata and root/link identity checks.
+Application activity/scans own one worker, configuration reservations, retained
+request replay and bounded snapshots; no SQLite lock spans traversal. Tauri's
+four narrow scan commands and native_runtime factory connect these layers.
+React's App-owned controller recovers/polls visible live state and presents
+explicit intent, observed metrics and coverage in the existing two views.
+
+The isolated test executable proved inherited and new-command ACL rejection
+before production runner wiring. It reuses production registration and
 capabilities, never ships in app/DMG, and adds no product test mode or grants.
-P02 native layout/zoom remain acceptance gates for this proposed UI change;
-none is closed by documentation. The provider/history data flow above describes
-later product architecture, not extra Phase 03 functionality.
+Fresh native geometry/zoom/ACL evidence resolves the three tracked P02 obligations;
+current keyboard, normal-bundle smoke and human Phase 03 visual acceptance remain
+separate. See the [verification record](superpowers/reviews/2026-10-16-phase-03-scanner-core-verification.md).
+The provider/history data flow above describes later product architecture, not
+extra Phase 03 functionality. No release or Phase 04 work is included.
 
 ## UI verification boundary
 

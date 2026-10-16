@@ -18,7 +18,7 @@ Phase 01.5 requires both `FUNCTIONAL QA: PASS` and a human `VISUAL QA: PASS`. Au
 
 ## Phase 02 — Workspace System
 
-**Accepted for development with open native verification.** FUNCTIONAL QA: PASS
+**Accepted for development; original native deferrals tracked below.** FUNCTIONAL QA: PASS
 from documented historical product evidence. HUMAN VISUAL QA: PASS by explicit
 human approval on 2026-10-16. RELEASE ACCEPTANCE: NOT GRANTED. See the
 [specification](superpowers/specs/2026-10-16-phase-02-workspaces-design.md) and
@@ -35,32 +35,36 @@ and does not perform analysis or delete user files.
 
 - [P02-NATIVE-LAYOUT](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
   and [P02-NATIVE-ZOOM](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
-  are OPEN — DEFERRED WITH HUMAN APPROVAL. The next UI-modifying phase must
-  resolve both before its acceptance, even if that phase is not Phase 03.
+  were deferred at acceptance and are now resolved by new Phase 03 native
+  geometry and inherited human/native zoom evidence, without relabelling older runs.
 - [P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
-  remains OPEN — DEFERRED WITH HUMAN APPROVAL, to be resolved before real
-  Phase 03 scanner integration with production permissions intact.
+  is resolved by real WK rejection before Phase 03 scanner integration, with
+  production permissions intact. New commands also passed their native gate.
 
 Implement optional user-selected workspace configuration for zero, one, or many paths, including validation, local persistence, and macOS selection UX. First-run configuration offers both **Add workspace** and **Skip for now**. Global providers may operate without a configured workspace. A workspace grants read-only analysis scope, not deletion authority, and the application never assumes `~/Repositories` or another default project root.
 
 ## Phase 03 — Read-only Scanner Core
 
-**Design and plan prepared for review; implementation not started.** See the
+**Implementation present; acceptance pending.** See the
 [scanner specification](superpowers/specs/2026-10-16-phase-03-scanner-core-design.md)
 and [11-task plan](superpowers/plans/2026-10-16-phase-03-scanner-core.md).
-The proposal measures explicit enabled roots using bounded metadata-only
+The implementation measures explicit enabled roots using bounded metadata-only
 traversal, memory-only sessions and minimal existing-view controls, without
-providers or history. Its isolated native verification checkpoint must resolve
+providers or history. Its isolated native verification checkpoint resolved
 [P02-NATIVE-ACL](superpowers/reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
-before real scanner integration, and prove native denial for the four proposed
-commands. It cannot assume native PASS or defer the check until cleanup.
-P02 native layout/zoom remain open and must pass before accepting this proposed
-UI-modifying phase. The documentary task closes none of these checks and does
-not extend the limited Phase 02 development acceptance to Phase 03.
+before real scanner integration and proved native denial for all four new
+commands. Automated gates and the five native test cases pass at the source
+identified in the [verification record](superpowers/reviews/2026-10-16-phase-03-scanner-core-verification.md).
+P02 tracked obligations now have fresh resolution evidence, but current native
+input/accessibility, safe normal-bundle scan and HUMAN VISUAL QA remain separate
+open acceptance work. Phase 02's limited acceptance is not extended to Phase 03.
+No release acceptance is granted.
 
 Implement bounded quick-scan coordination, explicit deep-scan requests, cancellation, progress, size accounting, diagnostics, and synthetic-filesystem tests. Establish protected policy enforcement before scanning real provider locations.
 
 ## Phase 04 — Developer Storage Providers
+
+**Not started.**
 
 Implement and validate independent macOS providers in small groups using the common contract. Begin with narrow, well-understood cache sources before higher-risk runtimes, simulators, package artifacts, or Docker data.
 

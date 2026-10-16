@@ -7,14 +7,18 @@ closure pass below tests product commit `2bb85b8` at checkout `6ccc839`.
 
 **Implementation:** Tasks 1–8 implemented and reviewed, including the reviewed
 frontend race/recovery and native dialog-focus fixes. Task 9's human acceptance
-is recorded; its unperformed native checks remain open.
+is recorded; native checks were open when that acceptance was granted.
 **FUNCTIONAL QA: PASS** according to the documented historical product evidence;
 no product suites or native checks were rerun for this acceptance decision.
 **HUMAN VISUAL QA: PASS** — explicit human approval in this conversation.
 **PHASE 02 ACCEPTANCE: ACCEPTED FOR DEVELOPMENT WITH OPEN NATIVE VERIFICATION.**
 **RELEASE ACCEPTANCE: NOT GRANTED.** This is not full native verification or
 readiness for distribution. Historical Phase 01.5 evidence is unchanged;
-Phase 03 has not started.
+Phase 03 had not started at that acceptance decision.
+
+Current follow-up, 2026-10-16: the three tracked native obligations below now
+have new Phase 03 resolution evidence. This does not relabel historical Phase 02
+test results or grant Phase 03 human visual/release acceptance.
 
 ## Human acceptance decision — 2026-10-16
 
@@ -409,11 +413,13 @@ relabeling any historical observation. General Phase 02 visual approval remains 
 
 ### P02-NATIVE-LAYOUT
 
-- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
-- **New follow-up:** Phase 03 Task 1 measured the exact six size/appearance cases
-  in Overview and populated Workspaces. Empty Workspaces/current Phase 03 UI
-  remains to be exercised before acceptance; see the
-  [new native receipt](2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
+- **Status:** RESOLVED by new Phase 03 Task 11 native renderer evidence, 2026-10-16.
+- **New follow-up:** Actual WK measurements now cover both views, empty and
+  populated Workspaces and current result controls at all six exact size/theme
+  pairs, including separators, empty centering and no horizontal overflow.
+  Native maximize and pageZoom getters are separately recorded in the
+  [new receipt](2026-10-16-phase-03-scanner-core-verification.md#task-11--consolidated-and-current-native-verification).
+  This closes the geometric obligation, not new Phase 03 keyboard or visual QA.
 - **Exact scope / missing check:** Overview and Workspaces in native macOS
   light/dark at each exact CSS viewport: 760 × 520, 1100 × 720 and 1600 × 900.
   Verify structural/section/separator width, centered empty states and no shell

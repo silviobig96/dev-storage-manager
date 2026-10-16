@@ -608,7 +608,7 @@ Fix only demonstrated defects.
 **Interfaces:** Consumes the Task 1 `run_case` executable and Tasks 7–10 contracts,
 produces evidence indexed by tested commit/artifact and gate, not new product APIs.
 
-- [ ] After focused work, run once: `npm run format:check`, `npm run lint`,
+- [x] After focused work, run once: `npm run format:check`, `npm run lint`,
       `npm run test:run`, `npm run build` (includes tsc -b),
       `cargo fmt --all --check`,
       `cargo clippy --workspace --all-targets --locked -- -D warnings`,
@@ -644,6 +644,17 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
 
 **Exit:** Evidence-backed Phase 03 handoff, not a release; unresolved gates remain
 open. No later provider/dashboard/cleanup feature is executed by this plan.
+
+Execution receipt at `d1a0261`: automated gates pass (179 frontend/130 Rust),
+all five default native cases pass after unlock, and normal/all-feature app/DMG
+exclusion is inspected. Independent helper/source review approved its implemented
+scope; final whole-branch review is separate. The constant-epoch test assumption
+was corrected and its unnecessary production relaxation removed completely.
+P02 tracked geometry/zoom/ACL obligations have new resolution evidence.
+Remaining native input, normal-bundle fixture-only smoke, explicit Phase 03
+human visual approval and publication keep the corresponding boxes unchecked.
+VoiceOver is NOT REPEATED AT HUMAN REQUEST, not PASS; contrast/motion changes
+are unauthorized/unperformed. No Phase 02 acceptance exception is inherited.
 
 ## Design-run evidence and self-review
 

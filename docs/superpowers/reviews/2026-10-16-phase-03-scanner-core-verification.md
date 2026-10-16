@@ -7,10 +7,11 @@ Implementation starts from reviewed design commit
 
 ## Current state
 
-Implementation in progress. Tasks 1–10 and their scoped fixes passed independent
-task review, with actual native authorization and real-engine fixture receipts.
-Task 11 consolidated/current native and human acceptance remains open. This is
-not a whole-phase functional PASS.
+Tasks 1–10 and scoped fixes are implemented/reviewed. Task 11's source/helpers
+also passed independent review. Consolidated automated FUNCTIONAL QA: PASS at
+`d1a0261`; all five default native test cases passed. Current real-input,
+safe normal-bundle smoke and human acceptance remain open. Final whole-branch
+review is pending; this is not complete native verification or phase acceptance.
 HUMAN VISUAL QA: AWAITING HUMAN REVIEW for the new Phase 03 UI.
 Phase 02 visual approval remains granted and is not reopened.
 
@@ -21,12 +22,12 @@ workspace scan, release or Phase 04 feature is authorized.
 
 ## Checkpoints
 
-| Checkpoint                           | Tasks | Status                               |
-| ------------------------------------ | ----- | ------------------------------------ |
-| Isolated native verification         | 1     | Implemented; reviewed receipts below |
-| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
-| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–10 implemented and reviewed  |
-| Functional/native/human acceptance   | 11    | Not executed                         |
+| Checkpoint                           | Tasks | Status                                       |
+| ------------------------------------ | ----- | -------------------------------------------- |
+| Isolated native verification         | 1     | Implemented; reviewed receipts below         |
+| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed           |
+| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–10 implemented and reviewed          |
+| Functional/native/human acceptance   | 11    | Automated/native cases pass; acceptance open |
 
 ## Inherited native obligations
 
@@ -35,8 +36,8 @@ workspace scan, release or Phase 04 feature is authorized.
   The Task 7 eleven-command native denial matrix also passed before
   MetadataScanRunner integration; its actual receipt is recorded below.
 - [P02-NATIVE-LAYOUT](2026-10-16-phase-02-workspaces-verification.md#p02-native-layout):
-  OPEN with new exact populated-view matrix evidence below. Empty Workspaces
-  and current Phase 03 controls must still be checked before UI acceptance.
+  RESOLVED by Task 11's exact empty/populated/current native geometry below.
+  New Phase 03 input and human visual checks remain separate.
 - [P02-NATIVE-ZOOM](2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom):
   RESOLVED for the inherited UI by actual pageZoom 2.0 and the specific human
   interaction confirmation below. New Phase 03 controls still require their own QA.
@@ -679,3 +680,173 @@ Current amended-source receipts: focused Workspaces/App 57 passed;
 `npm run format:check` and `git diff --check` exited 0. Earlier 172-test evidence
 belongs to `a0d7495`, not the fix. Actual native keyboard/Escape/focus remains
 Task 11, not proven by dispatching a DOM cancel event.
+
+## Task 11 — consolidated and current native verification
+
+Tested source: `d1a0261`, including native helper commits `84139a0` and `d23223b`.
+Independent review approved the implemented helper/evidence scope, without
+Critical/Important findings; full Task 11 acceptance remains open. Controller
+matched the actual native executable hash and the empty production-hook diff.
+Environmental npm/Vitest/hdiutil advisories remain qualified, not suppressed.
+
+### Test assumption corrected, not a product defect
+
+An intermediate constant-epoch successor mock failed and prompted relaxation
+`accc674`. Controller review compared it with Rust's actual generation advance:
+each accepted successor has a new epoch. The mock was invalid; no real product
+defect was demonstrated. `d1a0261` removes that relaxation completely and tests
+new-epoch successors, lost-response recovery, and same-epoch rejection. The
+production hook is identical to `2fa6b16`; no weaker session rule survived.
+Earlier 178-test/intermediate artifact receipts are not the final result.
+
+### Consolidated automated gates
+
+| Command                                                                                                                                                                  | Actual result                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `npm run format:check`                                                                                                                                                   | exit 0                                                                                            |
+| `npm run lint`                                                                                                                                                           | exit 0                                                                                            |
+| `npm run test:run`                                                                                                                                                       | exit 0; 15 files, 179 tests                                                                       |
+| `npm run build`                                                                                                                                                          | exit 0; includes `tsc -b`, Vite 53 modules                                                        |
+| `cargo fmt --all --check`                                                                                                                                                | exit 0; scoped scanner test-helper signature formatting                                           |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings`                                                                                                         | exit 0                                                                                            |
+| `cargo test --workspace --locked`                                                                                                                                        | exit 0; 130 tests: application 27, core 40, Tauri 17, persistence 20, platform 26; doc-tests pass |
+| `CARGO_TARGET_DIR=target/native-acceptance cargo clippy -p dev-storage-manager --all-targets --features native-acceptance,tauri/custom-protocol --locked -- -D warnings` | exit 0; opt-in target included                                                                    |
+| `npm run tauri build -- --debug`                                                                                                                                         | exit 0; normal app and DMG                                                                        |
+| `cargo build -p dev-storage-manager --bin dev-storage-manager --all-features --locked`                                                                                   | exit 0; normal main, not test executable                                                          |
+| `git diff --check`                                                                                                                                                       | exit 0                                                                                            |
+
+Frontend gates/assets/bundle were refreshed after restoring the strict hook.
+Rust production code did not change after its consolidated gate; helper Clippy
+was repeated after the hold helper change. No redundant full Rust rerun was
+claimed. Final whole-branch review is a separate remaining gate.
+
+### Five explicit actual-native cases
+
+Exact commands executed; normal Cargo tests do not implicitly execute this
+required-feature target.
+
+```sh
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case inherited-acl
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case inherited-layout
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case scanner-acl
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case scan-smoke
+CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case scan-ui
+```
+
+| CASE             | Actual result and scope                                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| inherited-acl    | exit 0; seven inherited commands, real unauthorized callers and parent guards                                                             |
+| inherited-layout | exit 0; both views, empty/populated configuration, exact native geometry/zoom/maximize                                                    |
+| scanner-acl      | exit 0; all eleven commands; zero unauthorized handler/runner work and unchanged fixture DB/status                                        |
+| scan-smoke       | exit 0; production factory/MetadataScanRunner, explicit fixture ID 1, schema/sentinels/exit hook                                          |
+| scan-ui          | exit 0 after unlock; actual visible WK polling, explicit successive Quick/Deep, partial/complete/stopping and DOM dialog/focus assertions |
+
+Earlier foreground waits failed while the Mac was locked. A supplemental
+`--snapshot-rendering` case used real reload/mount recovery without a visibility
+override and was explicitly narrower than the default. Only after visibility
+changed and the human confirmed unlock was default scan-ui repeated and passed.
+Default activation is still DOM, not real keyboard/pointer evidence.
+
+Current eleven-command matrix: ACL means explicit rejection before tagged shared
+handler entry for each real child/other-window/external-main caller. Guard means
+one handler entry but actual-parent rejection before service/picker/runner work.
+
+| Command                    | Child / other / external main | Wrong parent | Authorized-main control                                                   |
+| -------------------------- | ----------------------------- | ------------ | ------------------------------------------------------------------------- |
+| get_app_health             | ACL / ACL / ACL               | Guard        | schema 2                                                                  |
+| list_workspaces            | ACL / ACL / ACL               | Guard        | fixture listing                                                           |
+| select_and_add_workspace   | ACL / ACL / ACL               | Guard        | automated picker positive not exercised; human observation below          |
+| remove_workspace           | ACL / ACL / ACL               | Guard        | fixture record only                                                       |
+| set_workspace_enabled      | ACL / ACL / ACL               | Guard        | fixture off/on                                                            |
+| check_workspace            | ACL / ACL / ACL               | Guard        | fixture root metadata                                                     |
+| skip_workspace_setup       | ACL / ACL / ACL               | Guard        | setup persisted                                                           |
+| start_workspace_scan       | ACL / ACL / ACL               | Guard        | one accepted synthetic runner/replay in ACL case; real runner in smoke/UI |
+| get_workspace_scan         | ACL / ACL / ACL               | Guard        | authoritative status                                                      |
+| get_workspace_scan_session | ACL / ACL / ACL               | Guard        | exact retained quantities                                                 |
+| cancel_workspace_scan      | ACL / ACL / ACL               | Guard        | live acknowledgment then terminal after release                           |
+
+All three unauthorized contexts have zero tagged handler entries/runner delta;
+wrong-parent has eleven guard entries and zero runner delta. Fixture listing,
+SQLite bytes and scan state stay identical after every denied call. Missing
+bridge, navigation error or unsettled promise is failure, not ACL PASS. The
+controlled 127.0.0.1:0 origin listener closes/joins; production grants are intact.
+
+### Controlled fixture results
+
+| Real case / mode | Logical bytes | Observed allocation | Files / directories / traversal checks | IPC-to-terminal ms | End and reason                                   |
+| ---------------- | ------------- | ------------------- | -------------------------------------- | ------------------ | ------------------------------------------------ |
+| scan-smoke Quick | 14            | 8192                | 2 / 2 / 5                              | 63                 | completed; stopReason null                       |
+| scan-smoke Deep  | 14            | 8192                | 2 / 2 / 5                              | 64                 | completed; stopReason null                       |
+| scan-ui Quick    | 14            | 8192                | 2 / 22 / 33                            | 286                | partial; depth_limit diagnostic, stopReason null |
+| scan-ui Deep     | 28            | 12288               | 3 / 23 / 37                            | 271                | completed; stopReason null                       |
+
+Smoke has files of 9+5 bytes, three directory entries and root+nested directory.
+UI has twelve temporary roots: the smoke tree, ten nested directories with a
+14-byte sentinel under root 2, and ten empty roots. Hand-counted totals are
+14 directory entries, 23 directories including roots, three files and 28 bytes.
+Quick's omitted branch yields one unmeasured-entry lower bound and null unknown
+bytes; Deep completes within policy. Traversal checks include EOF, not just
+objects. Durations include IPC/polling, not engine-only benchmarks; allocation is
+this volume's observation, not a portable constant or recoverable-space estimate.
+
+SQLite/listing/schema 2 and sentinels remained unchanged. Smoke also checks inode,
+size, nanosecond mtime and exact entry counts. Reconstructing a service retains
+no scan; this is not normal-process relaunch evidence. No personal root was used.
+
+Only the third UI-runner invocation injects controlled stopping after fixture
+metadata work: exact `9007199254740993`, null allocation, TimeBudget request and
+held worker. It renders exact bytes/Not available, freezes writes and keeps
+workerActive until release. This is not native OS-blocked I/O, a measured
+five-second deadline or real allocation observation. Later interactive starts
+use the real MetadataScanRunner again. No synthetic runner ships in the product.
+
+### Native geometry, input and human boundary
+
+Actual CSS 760×520, 1100×720 and 1600×900 in Light/Dark pass for Overview and
+Workspaces, including empty centering, current result controls, separators,
+long paths and no document/main/control horizontal overflow. One measured
+titlebar correction per size; no raster-size inference. WK pageZoom getter
+confirms 2.0 without enlarging to hide pressure and restores 1.0. Native maximize
+measures 1728×965, zoomed 864×482; this is distinct from older P02 dimensions.
+Empty centering delta is at most 0.0078125 CSS px. DOM-activated modal focus and
+Cancel return pass; that is not real keyboard/Escape input.
+
+After unlock a single held fixture was shown at native 200%, getter verified,
+without personal data. Asked specifically about Add/cancel/reopening, the human
+said “lo veo bien, esta muy grande las letras pero no veo que se duplique nada”.
+This records no duplicated panels observed, not complete cancellation/reopen,
+keyboard-cycle or new Phase 03 visual approval. The large type is the deliberate
+native zoom, not a typography change. A separate current keyboard/zoom question
+is pending. Held-run completion/restoration is also pending collection.
+
+VoiceOver: NOT REPEATED AT HUMAN REQUEST; no fresh Phase 03 PASS. Prior P02
+human evidence stays historical. Increase contrast/Reduce motion authorization
+was not granted, so no global setting was changed. These checks, real current
+keyboard/focus/scroll and human visual approval must not be inferred from DOM
+assertions or builds. No private screenshot was captured or committed.
+
+### Artifact identity and product exclusion
+
+| Artifact at d1a0261                   | SHA256                                                           |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| native acceptance executable          | 105b6e2bd6a983615d54a94588bc67fbbe6c9953cb809bf76e0fbd592b8d569f |
+| normal debug app / DMG app executable | 04b8e446166ca2be4b65076a133d5f5db2ad0f55818f65988963a60423b51d8e |
+| normal all-features main              | 600a231a35e36a6a6c6f637149784496ea9730bf03f3e49047eebe686e94b934 |
+| debug DMG                             | 9883d4cd13550298feb64bff0a9a783a76aaf6538e1bcd9ae0f7f2dd95d034b4 |
+
+Cargo metadata confirms a test-only required-feature target, no QA bin; direct
+tempfile/objc2-web-kit QA edges are dev-only. Normal/build feature tree, source
+inclusion, normal and all-feature main builds, app and read-only mounted DMG
+contents were inspected. All locked package versions match base 04018df; only
+documented edges changed. The normal app contains Info.plist, executable/icon;
+the DMG contains that app, Applications link and normal presentation metadata.
+Mount detached. Six QA markers positively exist in the test executable and are
+absent in both normal executables and DMG app; strings alone are not the proof.
+Bundle identifier is unchanged. Loopback listener and UiRunner are test-only.
+
+Normal app/DMG were built and inspected, not launched/scanned in this receipt.
+A fixture-only normal-bundle smoke remains open: never click all-enabled Start
+with personal roots enabled, change unrelated flags, reset DB or add a diagnostic
+backdoor. Use existing authorized-main tooling for only a deliberately selected
+temporary fixture ID if available; otherwise report the gap. Final whole-branch
+review, human acceptance and publication remain separate pending steps.

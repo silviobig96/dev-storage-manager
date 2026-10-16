@@ -524,7 +524,7 @@ merge. No PR, merge, release or Phase 03 implementation is performed here.
 
 - [x] Record explicit human visual approval and the limited development-only
       acceptance in the [dated decision](../reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16).
-- [ ] Resolve [P02-NATIVE-LAYOUT](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
+- [x] Resolve [P02-NATIVE-LAYOUT](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
       before accepting the next UI-modifying phase.
 - [x] Resolve [P02-NATIVE-ZOOM](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
       before accepting the next UI-modifying phase.
@@ -534,7 +534,9 @@ merge. No PR, merge, release or Phase 03 implementation is performed here.
 
 New Phase 03 Task 1 evidence resolves inherited ACL and native zoom; see its
 [native receipt](../reviews/2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
-Layout stays OPEN pending empty Workspaces/current UI checks before acceptance.
+New Phase 03 Task 11 evidence also resolves the remaining exact native geometry,
+including empty Workspaces/current result controls; see its
+[current receipt](../reviews/2026-10-16-phase-03-scanner-core-verification.md#task-11--consolidated-and-current-native-verification).
 The original dated acceptance-closure observations below remain historical and
 are not retroactively marked executed. New scanner commands/new UI retain their
 own gates; this follow-up does not grant Phase 03 visual or release acceptance.

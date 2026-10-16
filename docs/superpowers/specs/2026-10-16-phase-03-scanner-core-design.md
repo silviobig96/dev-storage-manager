@@ -611,6 +611,12 @@ Acceptance requires functional gates, the three P02 obligations at their defined
 limits, native new-command authorization checks, truthful measurements and human
 inspection of the new UI. Distribution is a separate release decision.
 
+Execution-specific human instruction, 2026-10-16: do not repeat VoiceOver; the
+human considers the previous check sufficient for this iteration. Record the
+new check as NOT REPEATED AT HUMAN REQUEST, not a fresh Phase 03 PASS. This does
+not waive other native/input checks, authorize global contrast/motion changes,
+grant visual acceptance of the new UI or establish a general future-phase waiver.
+
 ## Exclusions
 
 No provider registry/tool detection, manifests/content reads, project intelligence,
