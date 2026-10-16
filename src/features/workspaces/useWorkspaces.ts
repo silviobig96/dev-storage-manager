@@ -46,7 +46,12 @@ export function useWorkspaces(): WorkspacesController {
   const session = useRef(0);
   const active = useRef(false);
   const listing = useRef<WorkspaceListing | null>(null);
+  // IDs are never reused. Remember observed rows even after removal so a delayed
+  // add response cannot reinsert or overwrite a later configuration for that ID.
+  const observedIds = useRef(new Set<string>());
   const observations = useRef<Record<string, AvailabilityObservation>>({});
+  const observationSequence = useRef(0);
+  const observationRequests = useRef(new Map<string, number>());
   const listRequest = useRef(0);
   const revision = useRef(0);
   const checkRequests = useRef(new Map<string, symbol>());
@@ -69,6 +74,7 @@ export function useWorkspaces(): WorkspacesController {
     (next: WorkspaceListing) => {
       listing.current = next;
       const ids = new Set(next.workspaces.map((workspace) => workspace.id));
+      for (const id of ids) observedIds.current.add(id);
       observations.current = Object.fromEntries(
         Object.entries(observations.current).filter(([id]) => ids.has(id)),
       );
@@ -142,6 +148,9 @@ export function useWorkspaces(): WorkspacesController {
   ): Promise<T> {
     if (!active.current)
       throw new WorkspaceCommandError('application_unavailable');
+    // Cancellation or rejection must not invalidate the only initial listing.
+    if (!listing.current)
+      throw new WorkspaceCommandError('operation_in_progress');
     if (mutations.current.has(key))
       throw new WorkspaceCommandError('operation_in_progress');
     const generation = session.current;
@@ -232,24 +241,28 @@ export function useWorkspaces(): WorkspacesController {
   }
 
   async function add() {
+    const observationVersion = observationSequence.current;
     return mutate('add', selectAndAddWorkspace, (result) => {
       if (result.status === 'cancelled') return false;
       if (result.status === 'added') {
-        updateListing((current) => ({
-          ...current,
-          setupState: 'configured',
-          workspaces: [
-            ...current.workspaces.filter(
-              (row) => row.id !== result.workspace.id,
-            ),
-            result.workspace,
-          ],
-        }));
-        observations.current = {
-          ...observations.current,
-          [result.workspace.id]: result.availability,
-        };
-        publishObservations();
+        const id = result.workspace.id;
+        if (!observedIds.current.has(id)) {
+          updateListing((current) => ({
+            ...current,
+            setupState: 'configured',
+            workspaces: [...current.workspaces, result.workspace],
+          }));
+        }
+        if (
+          listing.current?.workspaces.some((row) => row.id === id) &&
+          (observationRequests.current.get(id) ?? 0) <= observationVersion
+        ) {
+          observations.current = {
+            ...observations.current,
+            [id]: result.availability,
+          };
+          publishObservations();
+        }
       }
       return true;
     });
@@ -312,6 +325,7 @@ export function useWorkspaces(): WorkspacesController {
       throw new WorkspaceCommandError('workspace_not_found');
     const generation = session.current;
     const token = Symbol();
+    observationRequests.current.set(id, ++observationSequence.current);
     checkRequests.current.set(id, token);
     markBusy(id, token, true);
     publishObservations();

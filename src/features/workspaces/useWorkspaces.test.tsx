@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import {
   WorkspaceCommandError,
+  type AddWorkspaceOutcome,
   type AvailabilityObservation,
   type WorkspaceListing,
   type WorkspaceRecord,
@@ -497,4 +498,157 @@ it('a delayed skip response cannot downgrade a newer configured setup when refre
     status: 'ready',
     listing: configured,
   });
+});
+
+it('a delayed add response cannot restore a row already removed after an authoritative reload', async () => {
+  const { result } = await ready(empty);
+  const adding = deferred<AddWorkspaceOutcome>();
+  ipc.mockReturnValueOnce(adding.promise);
+  let pending!: ReturnType<typeof result.current.add>;
+  act(() => {
+    pending = result.current.add();
+  });
+  ipc.mockResolvedValueOnce(configured);
+  await act(async () => {
+    await result.current.reload();
+  });
+  const removed = { ...empty, setupState: 'configured' as const };
+  ipc.mockResolvedValueOnce({ removedId: '7' }).mockResolvedValueOnce(removed);
+  await act(async () => {
+    await result.current.remove('7');
+  });
+  ipc.mockRejectedValueOnce(new Error('refresh offline'));
+  await act(async () => {
+    adding.resolve({ status: 'added', workspace: row, availability: present });
+    await pending;
+  });
+  expect(result.current.state).toEqual({ status: 'ready', listing: removed });
+  expect(result.current.availability).toEqual({});
+  expect(
+    ipc.mock.calls.filter(([name]) => name === 'select_and_add_workspace'),
+  ).toHaveLength(1);
+});
+
+it('a delayed add response preserves a newer manual observation and enabled setting', async () => {
+  const { result } = await ready(empty);
+  const adding = deferred<AddWorkspaceOutcome>();
+  ipc.mockReturnValueOnce(adding.promise);
+  let pending!: ReturnType<typeof result.current.add>;
+  act(() => {
+    pending = result.current.add();
+  });
+  ipc.mockResolvedValueOnce(configured);
+  await act(async () => {
+    await result.current.reload();
+  });
+  const disabled = { ...row, enabled: false, updatedAt: 3 };
+  const current = { ...configured, workspaces: [disabled] };
+  ipc.mockResolvedValueOnce(disabled).mockResolvedValueOnce(current);
+  await act(async () => {
+    await result.current.setEnabled('7', false);
+  });
+  const newer: AvailabilityObservation = {
+    state: 'missing',
+    reason: null,
+    checkedAt: 4,
+  };
+  ipc.mockResolvedValueOnce({ id: '7', availability: newer });
+  await act(async () => {
+    await result.current.check('7');
+  });
+  ipc.mockRejectedValueOnce(new Error('refresh offline'));
+  await act(async () => {
+    adding.resolve({ status: 'added', workspace: row, availability: present });
+    await pending;
+  });
+  expect(result.current.state).toEqual({ status: 'ready', listing: current });
+  expect(result.current.availability).toEqual({ '7': newer });
+});
+
+it.each(['cancelled', 'rejected'] as const)(
+  'add during initial pending load cannot strand loading when selection would be %s',
+  async (outcome) => {
+    const initial = deferred<WorkspaceListing>();
+    ipc.mockReturnValueOnce(initial.promise);
+    const { result } = renderHook(() => useWorkspaces());
+    if (outcome === 'cancelled')
+      ipc.mockResolvedValueOnce({ status: 'cancelled' });
+    else ipc.mockRejectedValueOnce({ code: 'persistence_unavailable' });
+    await act(async () => {
+      const attempt = result.current.add();
+      await expect(attempt).rejects.toMatchObject({
+        code: 'operation_in_progress',
+      });
+      initial.resolve(empty);
+      await initial.promise;
+    });
+    expect(result.current.state).toEqual({ status: 'ready', listing: empty });
+    expect(ipc).toHaveBeenCalledExactlyOnceWith('list_workspaces');
+    expect(result.current.adding).toBe(false);
+  },
+);
+
+it('a delayed add validation cannot overwrite a later completed explicit check', async () => {
+  const { result } = await ready(empty);
+  const adding = deferred<AddWorkspaceOutcome>();
+  ipc.mockReturnValueOnce(adding.promise);
+  let pending!: ReturnType<typeof result.current.add>;
+  act(() => {
+    pending = result.current.add();
+  });
+  ipc.mockResolvedValueOnce(configured);
+  await act(async () => {
+    await result.current.reload();
+  });
+  const newer: AvailabilityObservation = {
+    state: 'denied',
+    reason: null,
+    checkedAt: 5,
+  };
+  ipc.mockResolvedValueOnce({ id: '7', availability: newer });
+  await act(async () => {
+    await result.current.check('7');
+  });
+  ipc.mockRejectedValueOnce(new Error('refresh offline'));
+  await act(async () => {
+    adding.resolve({ status: 'added', workspace: row, availability: present });
+    await pending;
+  });
+  expect(result.current.availability).toEqual({ '7': newer });
+});
+
+it('an unrelated committed mutation does not discard a newly added row when its refresh fails', async () => {
+  const { result } = await ready();
+  const adding = deferred<AddWorkspaceOutcome>();
+  ipc.mockReturnValueOnce(adding.promise);
+  let pending!: ReturnType<typeof result.current.add>;
+  act(() => {
+    pending = result.current.add();
+  });
+  const disabled = { ...row, enabled: false, updatedAt: 3 };
+  const current = { ...configured, workspaces: [disabled] };
+  ipc.mockResolvedValueOnce(disabled).mockResolvedValueOnce(current);
+  await act(async () => {
+    await result.current.setEnabled('7', false);
+  });
+  const newRow = {
+    ...row,
+    id: '8',
+    displayName: 'second',
+    selectedPath: '/fixture/second',
+  };
+  ipc.mockRejectedValueOnce(new Error('refresh offline'));
+  await act(async () => {
+    adding.resolve({
+      status: 'added',
+      workspace: newRow,
+      availability: present,
+    });
+    await pending;
+  });
+  expect(result.current.state).toEqual({
+    status: 'ready',
+    listing: { ...current, workspaces: [disabled, newRow] },
+  });
+  expect(result.current.availability).toEqual({ '8': present });
 });
