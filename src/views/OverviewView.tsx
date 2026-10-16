@@ -7,12 +7,20 @@ import { EmptyState } from '../components/content/EmptyState';
 import { AppIcon } from '../components/ui/AppIcon';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
 import './OverviewView.css';
+import type { Ref } from 'react';
 
-export function OverviewView({ healthState }: { healthState: HealthState }) {
+export function OverviewView({
+  healthState,
+  headingRef,
+}: {
+  healthState: HealthState;
+  headingRef?: Ref<HTMLHeadingElement>;
+}) {
   return (
     <div className="overview-view">
       <ContentHeader
         title="Overview"
+        headingRef={headingRef}
         description="Developer storage on this Mac."
       />
       <Section title="Storage overview">

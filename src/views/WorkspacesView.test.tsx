@@ -1,0 +1,486 @@
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WorkspacesView } from './WorkspacesView';
+import { useWorkspaces } from '../features/workspaces/useWorkspaces';
+import * as api from '../lib/workspaces';
+
+vi.mock('../lib/workspaces', async (original) => ({
+  ...(await original<typeof import('../lib/workspaces')>()),
+  listWorkspaces: vi.fn(),
+  selectAndAddWorkspace: vi.fn(),
+  removeWorkspace: vi.fn(),
+  setWorkspaceEnabled: vi.fn(),
+  checkWorkspace: vi.fn(),
+  skipWorkspaceSetup: vi.fn(),
+}));
+const first: api.WorkspaceRecord = {
+  id: '1',
+  displayName: 'Code',
+  selectedPath: '/fixture/one/Code',
+  enabled: true,
+  createdAt: 1,
+  updatedAt: 1,
+};
+const second: api.WorkspaceRecord = {
+  ...first,
+  id: '2',
+  selectedPath:
+    '/fixture/a-very-long-directory-name/another-long-directory/コード/Code',
+};
+const listing = (rows = [first, second]): api.WorkspaceListing => ({
+  setupState: 'configured',
+  workspaces: rows,
+  overlaps: [],
+});
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (value: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+function Harness() {
+  const workspaces = useWorkspaces();
+  return <WorkspacesView workspaces={workspaces} />;
+}
+const action = (verb: string, row = first) =>
+  `${verb} ${row.displayName} — ${row.selectedPath}`;
+
+// jsdom does not implement the native top layer or focus trap. This only lets
+// component tests exercise showModal/close and the app's own focus decisions.
+beforeEach(() => {
+  vi.resetAllMocks();
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
+  vi.mocked(api.listWorkspaces).mockResolvedValue(listing());
+});
+
+describe('Workspaces view', () => {
+  it('distinguishes loading, failed loading, retry, and configured empty', async () => {
+    const load = deferred<api.WorkspaceListing>();
+    vi.mocked(api.listWorkspaces)
+      .mockReturnValueOnce(load.promise)
+      .mockResolvedValue(listing([]));
+    render(<Harness />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading workspaces…');
+    expect(
+      screen.queryByRole('button', { name: 'Add workspace' }),
+    ).not.toBeInTheDocument();
+    await act(async () => {
+      load.reject(new Error('offline'));
+      await load.promise.catch(() => undefined);
+    });
+    expect(screen.getByText("Couldn't load workspaces.")).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('No workspaces added')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Skip for now' }),
+    ).not.toBeInTheDocument();
+    expect(api.selectAndAddWorkspace).not.toHaveBeenCalled();
+    expect(api.checkWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('keeps complete paths and unique action names and sends only the selected ID', async () => {
+    vi.mocked(api.listWorkspaces).mockResolvedValue({
+      ...listing(),
+      overlaps: [{ parentId: '1', childId: '2' }],
+    });
+    const check = deferred<api.CheckWorkspaceResult>();
+    vi.mocked(api.checkWorkspace).mockReturnValue(check.promise);
+    render(<Harness />);
+    expect(await screen.findByText(second.selectedPath)).toBeVisible();
+    expect(screen.getByRole('list')).toHaveAttribute('role', 'list');
+    expect(screen.getAllByText('Not checked')).toHaveLength(2);
+    expect(
+      screen.getAllByText(
+        'Overlaps another workspace. Future analysis must avoid double counting.',
+      ),
+    ).toHaveLength(2);
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: action('Check availability for', second),
+      }),
+    );
+    expect(api.checkWorkspace).toHaveBeenCalledWith('2');
+    expect(screen.getByText('Checking folder…')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: action('Remove workspace', second) }),
+    ).toBeDisabled();
+    await act(async () => {
+      check.resolve({
+        id: '2',
+        availability: { state: 'present', reason: null, checkedAt: 1 },
+      });
+      await check.promise;
+    });
+    expect(
+      screen.getByText(
+        'Folder found. Access to its contents has not been checked.',
+      ),
+    ).toBeVisible();
+    expect(api.setWorkspaceEnabled).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'missing',
+      null,
+      'Folder not found. Reconnect the disk or check the saved location.',
+    ],
+    ['denied', null, 'Access to this folder was denied.'],
+    [
+      'unknown',
+      'timeout',
+      "Couldn't confirm availability. Try checking again.",
+    ],
+    [
+      'unknown',
+      'identity_changed',
+      'The location now refers to a different folder. Remove and add it again to change configuration.',
+    ],
+  ] as const)(
+    'reports %s without implying content access',
+    async (state, reason, text) => {
+      vi.mocked(api.listWorkspaces).mockResolvedValue(listing([first]));
+      vi.mocked(api.checkWorkspace).mockResolvedValue({
+        id: '1',
+        availability: { state, reason, checkedAt: 1 },
+      });
+      render(<Harness />);
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: action('Check availability for'),
+        }),
+      );
+      expect(await screen.findByText(text)).toBeVisible();
+      expect(
+        screen.getByRole('checkbox', { name: action('Enabled for') }),
+      ).toBeChecked();
+    },
+  );
+
+  it('retains committed Enabled while saving and catches persistence failure', async () => {
+    const save = deferred<api.WorkspaceRecord>();
+    vi.mocked(api.setWorkspaceEnabled).mockReturnValue(save.promise);
+    render(<Harness />);
+    const enabled = await screen.findByRole('checkbox', {
+      name: action('Enabled for', second),
+    });
+    await userEvent.click(enabled);
+    expect(api.setWorkspaceEnabled).toHaveBeenCalledWith('2', false);
+    expect(enabled).toBeChecked();
+    expect(enabled).toBeDisabled();
+    expect(
+      screen.getByRole('checkbox', { name: action('Enabled for') }),
+    ).toBeEnabled();
+    await act(async () => {
+      save.reject(new api.WorkspaceCommandError('persistence_unavailable'));
+      await save.promise.catch(() => undefined);
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "Couldn't save workspace changes. Try again.",
+    );
+    expect(enabled).toBeChecked();
+    expect(enabled).toBeEnabled();
+  });
+
+  it('clears an earlier save announcement before a later rejected save', async () => {
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([first]))
+      .mockResolvedValue(listing([{ ...first, enabled: false }]));
+    vi.mocked(api.setWorkspaceEnabled)
+      .mockResolvedValueOnce({ ...first, enabled: false })
+      .mockRejectedValueOnce(
+        new api.WorkspaceCommandError('persistence_unavailable'),
+      );
+    render(<Harness />);
+    const enabled = await screen.findByRole('checkbox', {
+      name: action('Enabled for'),
+    });
+    await userEvent.click(enabled);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Workspace changes saved.',
+    );
+    await userEvent.click(enabled);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "Couldn't save workspace changes. Try again.",
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      'Workspace changes saved.',
+    );
+    expect(enabled).not.toBeChecked();
+  });
+
+  it('restores Add focus on cancellation and focuses the existing row on duplicate', async () => {
+    vi.mocked(api.selectAndAddWorkspace)
+      .mockResolvedValueOnce({ status: 'cancelled' })
+      .mockResolvedValueOnce({ status: 'duplicate', existingId: '2' });
+    render(<Harness />);
+    const add = await screen.findByRole('button', { name: 'Add workspace' });
+    await userEvent.click(add);
+    expect(add).toHaveFocus();
+    await userEvent.click(add);
+    expect(
+      await screen.findByText('This folder is already configured.'),
+    ).toBeVisible();
+    expect(screen.getByText(second.selectedPath).closest('li')).toHaveFocus();
+    expect(
+      screen.queryByText('Workspace added. No files were scanned.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows added rows only after commit and announces no scan', async () => {
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([]))
+      .mockResolvedValue(listing([first]));
+    const add = deferred<api.AddWorkspaceOutcome>();
+    vi.mocked(api.selectAndAddWorkspace).mockReturnValue(add.promise);
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add workspace' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Add workspace' }),
+    ).toBeDisabled();
+    expect(screen.queryByText(first.selectedPath)).not.toBeInTheDocument();
+    await act(async () => {
+      add.resolve({
+        status: 'added',
+        workspace: first,
+        availability: { state: 'present', reason: null, checkedAt: 1 },
+      });
+      await add.promise;
+    });
+    expect(screen.getByText(first.selectedPath)).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Workspace added. No files were scanned.',
+    );
+  });
+
+  it.each(['next', 'previous', 'empty'] as const)(
+    'removes pessimistically then focuses %s action',
+    async (target) => {
+      const rows = target === 'empty' ? [first] : [first, second];
+      const removed = target === 'previous' ? second : first;
+      vi.mocked(api.listWorkspaces)
+        .mockResolvedValueOnce(listing(rows))
+        .mockResolvedValue(
+          listing(rows.filter((row) => row.id !== removed.id)),
+        );
+      const save = deferred<api.RemoveWorkspaceResult>();
+      vi.mocked(api.removeWorkspace).mockReturnValue(save.promise);
+      render(<Harness />);
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: action('Remove workspace', removed),
+        }),
+      );
+      const dialog = screen.getByRole('dialog', { name: 'Remove workspace?' });
+      expect(
+        within(dialog).getByRole('button', { name: 'Cancel' }),
+      ).toHaveFocus();
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Remove workspace' }),
+      );
+      expect(api.removeWorkspace).toHaveBeenCalledExactlyOnceWith(removed.id);
+      expect(screen.getAllByText(removed.selectedPath)).toHaveLength(2);
+      expect(dialog).toHaveAttribute('aria-busy', 'true');
+      await act(async () => {
+        save.resolve({ removedId: removed.id });
+        await save.promise;
+      });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByText(removed.selectedPath)).not.toBeInTheDocument();
+      expect(
+        target === 'empty'
+          ? screen.getByRole('button', { name: 'Add workspace' })
+          : screen.getByRole('checkbox', {
+              name: action('Enabled for', target === 'next' ? second : first),
+            }),
+      ).toHaveFocus();
+      expect(
+        screen.queryByRole('button', { name: 'Skip for now' }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it('retains failed removal in the dialog and restores its invoker on cancellation', async () => {
+    vi.mocked(api.removeWorkspace).mockRejectedValue(
+      new api.WorkspaceCommandError('persistence_unavailable'),
+    );
+    render(<Harness />);
+    const invoker = await screen.findByRole('button', {
+      name: action('Remove workspace'),
+    });
+    await userEvent.click(invoker);
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Remove workspace' }),
+    );
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      "Couldn't save workspace changes. Try again.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Cancel' }),
+    );
+    expect(invoker).toHaveFocus();
+    expect(screen.getByText(first.selectedPath)).toBeVisible();
+  });
+
+  it('restores Cancel focus only after the modal has left the document', async () => {
+    render(<Harness />);
+    const invoker = await screen.findByRole('button', {
+      name: action('Remove workspace'),
+    });
+    await userEvent.click(invoker);
+    let dialogPresentAtFocus: boolean | undefined;
+    invoker.addEventListener('focus', () => {
+      dialogPresentAtFocus = screen.queryByRole('dialog') !== null;
+    });
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Cancel',
+      }),
+    );
+    expect(invoker).toHaveFocus();
+    expect(dialogPresentAtFocus).toBe(false);
+  });
+
+  it('gates uncertain mutation retries until a successful reload and recovers focus when removal committed', async () => {
+    vi.mocked(api.removeWorkspace).mockRejectedValue(
+      new Error('lost response'),
+    );
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([first]))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(listing([]));
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: action('Remove workspace') }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Remove workspace',
+      }),
+    );
+    expect(
+      within(screen.getByRole('dialog')).getByRole('alert'),
+    ).toHaveTextContent('Reload workspaces before trying again.');
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Remove workspace',
+      }),
+    ).toBeDisabled();
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Reload workspaces',
+      }),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add workspace' })).toHaveFocus();
+  });
+
+  it('keeps the reload gate after a second failed reload', async () => {
+    vi.mocked(api.removeWorkspace).mockRejectedValue(
+      new Error('lost response'),
+    );
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([first]))
+      .mockRejectedValue(new Error('offline'));
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: action('Remove workspace') }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Remove workspace',
+      }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Reload workspaces',
+      }),
+    );
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Remove workspace',
+      }),
+    ).toBeDisabled();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Reload workspaces',
+      }),
+    ).toBeEnabled();
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Cancel',
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Add workspace' }),
+    ).toBeDisabled();
+  });
+
+  it('catches a rejected manual Check and keeps the prior observation actionable', async () => {
+    vi.mocked(api.checkWorkspace).mockRejectedValue(
+      new api.WorkspaceCommandError('application_unavailable'),
+    );
+    render(<Harness />);
+    const check = await screen.findByRole('button', {
+      name: action('Check availability for'),
+    });
+    await userEvent.click(check);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Workspace services are unavailable. Try again.',
+    );
+    expect(check).toBeEnabled();
+    expect(screen.getAllByText('Not checked')).toHaveLength(2);
+  });
+
+  it('keeps Retry available after a rejected retry without presenting empty configuration', async () => {
+    vi.mocked(api.listWorkspaces).mockRejectedValue(new Error('offline'));
+    render(<Harness />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+    expect(screen.getByText("Couldn't load workspaces.")).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(screen.queryByText('No workspaces added')).not.toBeInTheDocument();
+  });
+
+  it('catches failed Add and Skip handlers without unhandled rejections', async () => {
+    vi.mocked(api.listWorkspaces).mockResolvedValue({
+      setupState: 'undecided',
+      workspaces: [],
+      overlaps: [],
+    });
+    vi.mocked(api.selectAndAddWorkspace).mockRejectedValue(
+      new api.WorkspaceCommandError('access_denied'),
+    );
+    vi.mocked(api.skipWorkspaceSetup).mockRejectedValue(
+      new api.WorkspaceCommandError('persistence_unavailable'),
+    );
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add workspace' }),
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Access to this folder was denied.',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "Couldn't save workspace changes. Try again.",
+    );
+    expect(
+      screen.getAllByRole('button', { name: 'Add workspace' }),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByText('Choose workspace folders'),
+    ).not.toBeInTheDocument();
+  });
+});

@@ -388,6 +388,52 @@ it('a successful commit survives a failed follow-up list', async () => {
   expect(result.current.error).toBeInstanceOf(WorkspaceCommandError);
 });
 
+it('manual reload failures preserve uncertainty until an authoritative list succeeds', async () => {
+  const { result } = await ready();
+  ipc
+    .mockRejectedValueOnce(new Error('lost'))
+    .mockRejectedValueOnce(new Error('offline'));
+  let original: unknown;
+  await act(async () => {
+    original = await result.current
+      .remove('7')
+      .catch((error: unknown) => error);
+  });
+  expect(original).toMatchObject({
+    source: 'transport',
+    outcomeUnknown: true,
+    requiresReload: true,
+  });
+  ipc.mockRejectedValueOnce({ code: 'persistence_unavailable' });
+  await act(async () => {
+    await expect(result.current.reload()).rejects.toMatchObject({
+      outcomeUnknown: true,
+      requiresReload: true,
+    });
+  });
+  expect(result.current.error).toMatchObject({
+    outcomeUnknown: true,
+    requiresReload: true,
+  });
+  expect(result.current.state).toEqual({
+    status: 'ready',
+    listing: configured,
+  });
+  expect(
+    ipc.mock.calls.filter(([name]) => name === 'remove_workspace'),
+  ).toHaveLength(1);
+  ipc.mockResolvedValueOnce({ ...empty, setupState: 'configured' });
+  await act(async () => {
+    await result.current.reload();
+  });
+  expect(result.current.error).toBeNull();
+  expect(result.current.state).toMatchObject({ listing: { workspaces: [] } });
+  expect(original).toMatchObject({
+    outcomeUnknown: true,
+    requiresReload: true,
+  });
+});
+
 it.each(['resolve', 'reject'] as const)(
   'ignores late action %s after unmount',
   async (outcome) => {

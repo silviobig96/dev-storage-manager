@@ -40,6 +40,16 @@
 .sidebar-item svg {
   flex: none;
 }
+.sidebar-item--available {
+  inline-size: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+}
+.sidebar-item--available:hover:not(.sidebar-item--current) {
+  background: var(--surface-hover);
+}
 .sidebar-item--current {
   color: var(--selection-text);
   background: var(--selection);

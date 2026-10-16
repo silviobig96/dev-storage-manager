@@ -107,7 +107,18 @@ export function useWorkspaces(): WorkspacesController {
         setError(null);
       }
     } catch (failure) {
-      const commandError = toWorkspaceCommandError(failure);
+      const failureError = toWorkspaceCommandError(failure);
+      // Failed reads cannot establish whether a lost mutation committed. Keep
+      // that uncertainty visible across retries and navigation until a list succeeds.
+      const commandError = needsReconciliation.current
+        ? new WorkspaceCommandError(
+            failureError.code,
+            failureError.source,
+            failureError.existingId,
+            true,
+            true,
+          )
+        : failureError;
       if (
         isCurrent(generation) &&
         request === listRequest.current &&
