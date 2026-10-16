@@ -575,12 +575,23 @@ scoped commits and a human-review handoff, not a scanner or automatic phase PASS
 ## Implementation verification status
 
 Tasks 1–8 are implemented and reviewed, including fixes `8a3aa63` and `5656296`.
-Task 9's consolidated functional commands pass: frontend 105 tests in 11 files,
-Rust 48 unit tests, strict lint/Clippy, frontend/debug app build and formatting.
+Task 9's functional commands pass: final frontend 107 tests in 11 files, Rust
+48 unit tests, strict lint/Clippy, frontend/debug app build and formatting.
+The historical `5656296` consolidated frontend result was 105 tests. Native
+Cancel/Escape focus QA required trigger capture in `cfcdbb4` plus the dialog
+cleanup ordering correction in `23e4f4e`; the first correction alone still
+failed native retest. Final scoped review, 25 focused tests, 107 full frontend
+tests, fresh debug bundle and native Cancel/Escape focus retest passed. Rust was
+unchanged after its 48-test run.
 The formatting-only test-file correction has a focused 6-test pass. The
 [verification record](../reviews/2026-10-16-phase-02-workspaces-verification.md)
 details scope, dependency/ACL audit, measured browser coverage and outstanding
-native/accessibility checks. Partially exercised checklist items remain
+native/accessibility checks. Real native picker/add/duplicate, restart,
+enabled/manual availability, remove-only-configuration and unchanged fixture
+sentinel flows were exercised, with both maximized dark views inspected. The
+native exact-size/light/200% matrix, rapid activation, adversarial native ACL,
+full focus trap, screen reader and OS contrast/motion checks remain pending.
+Partially exercised checklist items remain
 unchecked. `VISUAL QA: AWAITING HUMAN REVIEW`; the phase is not complete and
 Phase 03 has not been executed.
 
@@ -588,8 +599,8 @@ Final whole-branch review at `765631d` reported no findings. The controller
 published that checkpoint to `feat/phase-02-workspaces` with a normal push and
 verified the remote head exactly matched local HEAD; the verification record
 contains the full receipt. This receipt does not assert publication of later
-documentation commits. Native/accessibility checks and human visual acceptance
-remain pending.
+documentation commits. Remaining native/accessibility checks and human visual
+acceptance remain pending.
 
 ## Documentation-run verification record
 

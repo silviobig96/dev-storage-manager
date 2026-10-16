@@ -1,11 +1,12 @@
 # Phase 02 workspace verification
 
 Date: 2026-10-16. Normal checkout: `feat/phase-02-workspaces`.
-Implementation reviewed through `5656296`; comparison base: merged Phase 01.5
+Implementation reviewed through `23e4f4e`; comparison base: merged Phase 01.5
 `8c9fc88`, including wide-window correction `8173c67`.
 
 **Implementation:** Tasks 1–8 implemented and reviewed, including the reviewed
-frontend race/recovery fixes. Task 9 remains open for outstanding checks below.
+frontend race/recovery and native dialog-focus fixes. Task 9 remains open for
+outstanding checks below.
 **FUNCTIONAL QA: PASS.** Consolidated commands pass, including the fresh debug
 application bundle and final formatting correction described below. Native and
 accessibility coverage is partial and is reported separately.
@@ -15,17 +16,19 @@ Historical Phase 01.5 evidence is unchanged; Phase 03 has not been executed.
 
 ## Current functional evidence
 
-The controller ran the product gates against the integrated implementation at
-`5656296`; final documentation/formatting checks and the focused test-formatting
-correction are recorded below. Focused behavioral RED/GREEN cycles were recorded
-during each owning task before this consolidated run; their earlier totals are
-not counted as the final suite result.
+The initial consolidated gates ran against `5656296`. After native QA exposed a
+dialog-focus defect, the affected frontend gates and native bundle were verified
+again through `23e4f4e`, as recorded below. No Rust implementation changed after
+the 48-test workspace run, so that suite was not redundantly repeated. Full
+formatting passed at `765631d`; later focus fixes and this evidence update have
+scoped formatting/diff checks. Earlier task totals are historical evidence,
+not added to the final suite totals.
 
 | Command                                                          | Current result                                    |
 | ---------------------------------------------------------------- | ------------------------------------------------- |
 | `npm run format:check`                                           | Exit 0; all matched files use Prettier style      |
 | `npm run lint`                                                   | Exit 0; no ESLint diagnostics                     |
-| `npm run test:run`                                               | Exit 0; 11 files, 105 tests passed                |
+| `npm run test:run`                                               | Exit 0; 11 files, 107 tests passed                |
 | `npm run build`                                                  | Exit 0; `tsc -b` and Vite, 46 modules transformed |
 | `cargo fmt --all --check`                                        | Exit 0                                            |
 | `cargo clippy --workspace --all-targets --locked -- -D warnings` | Exit 0; no warnings                               |
@@ -36,17 +39,22 @@ not counted as the final suite result.
 Rust totals are application 6, core 4, Tauri library 12, persistence 19 and
 platform 7. Binary and doctest targets contain zero tests. npm emits the
 pre-existing user configuration warning about `python`; no host configuration
-was changed. The Tauri build also reran its frontend before-build command
-successfully (46 modules) and completed the normal Rust application build in
-16.83 seconds. No product test or compiler failure remains in the reported gates.
+was changed. The final Tauri debug build at `23e4f4e` exited 0 outside the
+sandbox, produced the app and DMG, reran the frontend before-build command
+successfully (46 modules), and completed its Rust build in 4.41 seconds. The
+initial `5656296` debug build had also passed (16.83 seconds). During the
+intermediate `cfcdbb4` build, both the sandboxed build and verbose diagnostic
+attempt exited 1 with `hdiutil: create failed - Device not configured`; retrying
+the same build outside the sandbox succeeded. This recovered packaging
+environment restriction is separate from the native focus defect below.
 
 The initial full formatting gate exited 1 for one existing test-file chain in
 `src/lib/workspaces.test.ts`. Prettier changed only that chain's line wrapping;
 the focused `npm run test:run -- src/lib/workspaces.test.ts` then passed 1 file,
 6 tests, and the full `npm run format:check` and `git diff --check` exited 0.
 This was a formatting correction, not a behavioral regression or TDD RED. The
-unchanged product implementation remains covered by the consolidated 105/48
-frontend/Rust results above; no broad test rerun was needed for test whitespace.
+then-unchanged product implementation was covered by the consolidated historical
+105/48 frontend/Rust results; no broad test rerun was needed for test whitespace.
 The controller's final full formatting and diff checks at `765631d` also exited 0.
 
 ## Scope and boundary audit
@@ -58,6 +66,10 @@ frontend bridge/controller/components and their covering tests, manifests,
 lockfile, specification, plan and branch-naming instruction refinement. The implementation comparison comprises
 56 files, 9,193 insertions and 132 deletions, including the Phase 02 design/plan.
 The verification/status documents are a separate documentation checkpoint.
+Later commits `cfcdbb4` and `23e4f4e` contain only the focused removal-trigger and
+dialog-lifecycle corrections with covering frontend tests; their scoped reviews
+reported no findings. These changes do not expand the Rust, permission or
+filesystem boundary audited below.
 
 - The native Rust picker is the only production source of a new root. Its
   no-argument JS command uses one folder, the actual containing window, the title
@@ -221,24 +233,79 @@ Try again.” and retained the dialog; Cancel retained both rows and restored th
 Remove invoker's focus. These browser states do not prove native SQLite failure
 or native picker behavior; captures remain outside Git.
 
-## Native and remaining acceptance checks
+## Native application evidence
 
-The controller launched `npm run tauri dev` from the normal checkout. It compiled
-and started the checkout's debug binary. Computer-use attachment to that
-unbundled executable was unavailable; launch alone establishes no picker, health
-screen or native flow coverage. Attachment to the exact freshly built bundle
-awaits an unlocked macOS session. Native UI checks remain pending; this access
-limitation is not a failed product test. No native flow result is claimed.
+The controller launched `npm run tauri dev` from the normal checkout. Initial
+attachment to the unbundled executable was unavailable and a locked macOS
+session delayed fresh-bundle inspection. Those access limitations were later
+resolved. The following observations use the actual freshly built application
+and only explicitly chosen temporary fixture roots; they are separate from the
+synthetic browser records above.
+
+- Overview showed connected health/schema 2 and optional first-run setup.
+  Opening and cancelling the native folder panel left setup/configuration
+  unchanged. Selecting a Unicode fixture directory added one Present row and
+  the no-scan announcement. Selecting it again kept one row and announced the
+  duplicate.
+- Disabling the row, explicitly quitting with Command-Q and reopening retained
+  the row disabled with Not checked; Overview no longer showed setup. Enabling
+  and manually checking produced Present. Explicitly renaming the controlled
+  fixture away then checking produced Missing without changing enabled. After
+  restoring it, another explicit check produced Present. This is a temporary
+  rename fixture, not a physical-volume disconnect or automatic search.
+- The HTML removal confirmation showed Cancel initially focused and both exact
+  reassurance sentences. Escape preserved the row. Confirmed removal produced
+  a valid empty view, focused Add, and no Skip/setup reset. A separate long
+  Unicode fixture added through the native panel retained its full path in the
+  accessibility tree and persisted as Not checked after explicit quit/reopen.
+- Both views were inspected in the maximized dark native window. Native raster
+  captures do not establish CSS viewport dimensions or the exact size matrix;
+  all such captures remain outside Git. No OS appearance preference was changed.
+- After the final focus retest at `23e4f4e`, confirmed removal of the remaining
+  long-path configuration again produced the valid empty view with Add focused
+  and no Skip. Only the two QA configuration rows were removed through the app.
+  Both fixture roots and the child directory remained intact; the sentinel
+  digest matched its initial value. Fixture files were left intact.
+
+These flows exercise actual local main-window health and workspace IPC. They do
+not substitute for adversarial native origin/webview-denial checks or actual
+screen-reader use merely because accessibility-tree inspection was available.
+
+### Native focus regression and verified correction
+
+Native WKWebView QA exposed Cancel/Escape returning focus to a previously
+focused row rather than the actual Remove button. Commit `cfcdbb4` captured
+the triggering button directly instead of reading `document.activeElement`.
+Its 107-test frontend suite and scoped independent review passed, but the fresh
+native retest still reproduced the defect; that first correction alone did
+not fix native focus return.
+
+The regression fixture was then strengthened to model `dialog.close()` restoring
+its pre-dialog focus. It failed with 2 failed/21 passed and exposed passive
+effect cleanup closing the dialog after the parent's layout focus restoration.
+Commit `23e4f4e` moved dialog lifecycle cleanup to a layout effect, closing it
+before the parent restores the actual trigger. Focused view/dialog tests passed
+25/25, the full frontend suite passed 107 tests in 11 files, and lint, build,
+scoped formatting/diff checks and independent scoped review passed. After a
+fresh final bundle build and explicit quit/reopen, native Escape and Cancel
+each returned accessibility focus to the actual Remove button. The visible
+focus ring was captured privately. No product change followed that native pass.
+
+An earlier native Tab sequence reached Cancel, Remove, HTML content, dialog
+container and Cancel again. This observation does not establish a complete
+focus-trap acceptance pass.
+
+## Remaining acceptance checks
 
 The following remain open and cannot be inferred from automated/browser results:
 
-- Native folder-only picker selection/cancellation, rapid activation, focus
-  return, successful add, restart persistence, enabled/manual-check/remove flows
-  and unchanged sentinel contents through that native workflow.
-- Actual WKWebView main allow/other-origin ACL denial smoke checks.
-- Maximized layout, 200% zoom with all long-path row actions reachable, native
-  light/dark appearance, complete dialog focus trapping, and actual screen-reader
-  list/path reading order.
+- Rapid native picker activation without a second panel.
+- Actual adversarial WKWebView other-origin/webview ACL denial smoke checks;
+  successful local main-window flows are verified above.
+- Exact native light/dark CSS-size matrix, 200% zoom with all long-path row
+  actions reachable, complete dialog focus trapping and actual screen-reader
+  list/path reading order. Maximized dark native views were inspected, but
+  native CSS dimensions and native light appearance were not established.
 - Increased contrast and reduced motion inspection. No global OS preference was
   changed to perform these checks.
 - Explicit human inspection/approval of the running Phase 02 UI.
@@ -254,7 +321,8 @@ or authorize Phase 03, a PR, merge or release.
 
 Final independent whole-branch review at `765631d` reported no findings. The
 implementation was ready for its authorized feature-branch publication while
-native and human acceptance remained pending.
+native and human acceptance remained pending. Later native-focus corrections
+received clean scoped reviews; remaining native and human gates stay open.
 
 The controller published `feat/phase-02-workspaces` with the normal
 `git push -u origin feat/phase-02-workspaces` command, exit 0. At that checkpoint,
