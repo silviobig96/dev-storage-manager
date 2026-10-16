@@ -1,8 +1,22 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AppShell } from './AppShell';
 
 describe('application shell', () => {
+  it('moves keyboard focus from the skip link directly to the content pane', async () => {
+    render(
+      <AppShell currentView="overview">
+        <h1>Overview</h1>
+      </AppShell>,
+    );
+    await userEvent.tab();
+    const skip = screen.getByRole('link', { name: 'Skip to content' });
+    expect(skip).toHaveFocus();
+    expect(skip).toHaveAttribute('href', `#${screen.getByRole('main').id}`);
+    await userEvent.tab();
+    expect(screen.getByRole('main')).toHaveFocus();
+  });
   it('identifies the current view and keeps future destinations noninteractive', () => {
     render(
       <AppShell currentView="overview">

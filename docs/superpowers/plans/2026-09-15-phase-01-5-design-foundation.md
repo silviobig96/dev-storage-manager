@@ -541,7 +541,7 @@ git commit -m "feat: integrate macOS design foundation"
 - Modify: `src/components/shell/shell.test.tsx`
 - Modify: `src/views/OverviewView.test.tsx`
 
-- [ ] **Step 1: Add focused semantic regressions before visual polish**
+- [x] **Step 1: Add focused semantic regressions before visual polish**
 
 Extend tests to require:
 
@@ -562,7 +562,7 @@ npm run test:run -- src/components/shell/shell.test.tsx src/views/OverviewView.t
 Expected: tests fail for any missing semantics; if they already pass, preserve
 them as regression coverage before CSS changes.
 
-- [ ] **Step 2: Complete the default and minimum-width layouts**
+- [x] **Step 2: Complete the default and minimum-width layouts**
 
 Implement the documented behavior:
 
@@ -573,7 +573,7 @@ Implement the documented behavior:
 - responsive row stacking without changing DOM order; and
 - no shell-level horizontal overflow at `760px` or 200% zoom.
 
-- [ ] **Step 3: Complete appearance and preference states**
+- [x] **Step 3: Complete appearance and preference states**
 
 Check and tune:
 
@@ -588,7 +588,7 @@ Check and tune:
 Keep shadows limited to actual elevation. Do not introduce colored glass,
 gradients, or broad translucency during polish.
 
-- [ ] **Step 4: Run the focused and broad frontend checks**
+- [x] **Step 4: Run the focused and broad frontend checks**
 
 Run:
 
@@ -602,7 +602,7 @@ npm run build
 
 Expected: every command exits zero.
 
-- [ ] **Step 5: Commit the responsive and accessible polish**
+- [x] **Step 5: Commit the responsive and accessible polish**
 
 ```bash
 git add src/styles src/components src/views
@@ -795,3 +795,15 @@ Phase 02 must not begin as part of this plan.
   App/bridge tests. Full frontend suite 26/26, lint, format, and build pass.
   StrictMode stale resolve/reject tests protect the existing cancellation guard.
   Removed the obsolete App.css; health contract and backend remain unchanged.
+- Task 6: implementation complete. Semantic regression baseline and added
+  keyboard-order test pass (7/7 shell/Overview). Browser: both appearances at
+  both approved sizes; no horizontal overflow. Real Chrome 200% zoom at the
+  minimum window yields a 380 × 260 CSS viewport with no horizontal overflow;
+  content can scroll. Emulated increased contrast resolves to 3px focus and
+  stronger separators; reduced motion resolves to zero-duration transitions.
+  Native: dark default-size debug bundle, connected state, visible skip-link
+  focus and successful keyboard activation to main. Native light/minimum-size
+  and native accessibility preferences remain unverified, not assumed passing.
+- Ruling: Task 6 needed verification and regression coverage, not extra visual
+  decoration. Keep the inspected layout and record remaining native checks in
+  Task 7 rather than claiming full visual coverage.
