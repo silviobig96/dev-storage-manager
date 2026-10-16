@@ -168,21 +168,21 @@ decimal string and `SafetyLevel::{Safe,Review,Protected}`.
 `measurement_protection() -> MeasurementProtection` enforce spec metadata-only
 decisions and always-Protected/no-actions output. Core does not inspect Tauri/SQL.
 
-- [ ] Write `scan_contract_quantities`: serialize 9,007,199,254,740,993 and
+- [x] Write `scan_contract_quantities`: serialize 9,007,199,254,740,993 and
       u64::MAX exactly as strings, reject Number, negative/noncanonical strings;
       nullable allocated/unmeasured values stay null, observed zero stays "0".
       Round-trip modes/states/errors, fields/casing and decimal revision/time;
       no private object identity or descendant path appears in JSON.
-- [ ] Write `scan_read_policy`: metadata on ordinary/hidden/.git/manifest entries
+- [x] Write `scan_read_policy`: metadata on ordinary/hidden/.git/manifest entries
       remains allowed inside the read scope; external symlinks, unsupported
       mount/cloud facts return Skip with exact reasons. For every mode and size,
       assert measurement protection Protected, actions empty, reclaimability
       Unknown. A proposed Safe claim cannot downgrade it. Broad roots get
       root_too_broad without deleting configuration.
-- [ ] Run `cargo test -p dev-storage-core scan_ --locked`; require behavioral or
+- [x] Run `cargo test -p dev-storage-core scan_ --locked`; require behavioral or
       missing-contract RED, implement spec types/budgets/messages, rerun GREEN.
       Pin every numeric limit rather than testing only presence of a field.
-- [ ] Commit `feat: define read-only scan contracts and protection policy`.
+- [x] Commit `feat: define read-only scan contracts and protection policy`.
 
 The quantity assertion is a real test body, not an approximate Number comparison
 (the existing core dev dependency already includes serde_json):
@@ -227,18 +227,18 @@ ScanIoError distinguishes a diagnostic from a cooperative Stopped(StopReason).
 logical/allocated metadata; no contents. ObjectIdentity is a fixed native key,
 volume UUID + file ID + birth time, separate from transport strings.
 
-- [ ] Write `scan_root_anchor` on temporary roots: saved identity accepted;
+- [x] Write `scan_root_anchor` on temporary roots: saved identity accepted;
       renamed/missing/replaced/denied/broad-root facts map to exact reasons,
       no enumeration on failed validation. Symlink-selected root uses the saved
       canonical object; returning a different identity never follows a new target.
-- [ ] Write `scan_cursor_no_follow`: controlled external symlink, loop, FIFO,
+- [x] Write `scan_cursor_no_follow`: controlled external symlink, loop, FIFO,
       broken link, hidden/.git/node_modules directories. Count external-target
       metadata/content opens 0; special-file opens 0; regular-content opens 0.
       A barrier replaces a child between fstatat and openat with a symlink:
       expect changed/skipped and external sentinel unvisited. Another barrier
       renames a directory after open: observed parent mismatch stops its branch;
       test the documented anchored-descriptor limitation, not atomic containment.
-- [ ] Write `scan_metadata_cases`: sparse fixture length from `set_len`, observed
+- [x] Write `scan_metadata_cases`: sparse fixture length from `set_len`, observed
       blocks distinct from logical size; injected missing/negative allocation
       returns unknown, never zero; a representable blocks count whose ×512
       overflows produces quantity_overflow, not a wrapped byte measurement.
@@ -247,16 +247,21 @@ volume UUID + file ID + birth time, separate from transport strings.
       attributes fail closed. These are injected deterministic tests; real volume/permissions evidence
       is labelled separately. Byte/Unicode names survive internally; no transport
       failure or lossy path is required for a non-UTF-8 descendant.
-- [ ] Run `cargo test -p dev-storage-platform scan_ --locked` RED, implement the
+- [x] Run `cargo test -p dev-storage-platform scan_ --locked` RED, implement the
       narrow cursor/RAII and factor existing identity decoding without changing
       macos-v1 semantics. Validate attribute masks and FFI buffers; no unsafe
       aligned struct casts, descendants opened as files, xattr/content reads or
       fallback that traverses unsupported cloud/network scope. Rerun GREEN plus
       `cargo test -p dev-storage-platform workspace_ --locked` after extraction.
-- [ ] Commit `feat: add anchored macOS scan metadata traversal`.
+- [x] Commit `feat: add anchored macOS scan metadata traversal`.
 
 **Exit:** Only temporary fixture calls made; root-only Phase 02 behavior remains.
 No command or application path starts the native cursor yet.
+
+Execution receipt: `d125750`, independently reviewed. The verification record
+separates native fixtures from injected cloud/mount/home/denial/name facts;
+those conditions are not represented as live-volume tests. Session-wide
+descriptor enforcement remains Task 5, not an adapter-only claim.
 
 ## Task 4: Implement bounded unique-object accounting
 

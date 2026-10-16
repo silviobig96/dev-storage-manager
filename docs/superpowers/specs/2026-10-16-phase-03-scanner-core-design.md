@@ -195,6 +195,11 @@ per-root unavailable results; valid roots continue. If none validates, finish
 current account home root as `root_too_broad` (volume-root identity and current
 account home obtained through `getpwuid_r`, not an environment variable or
 project-location convention); preserve configuration and ask for a narrower root.
+That platform guard may obtain one metadata-only reference to the OS account
+home to compare descriptor identity; it never enumerates home, reads contents,
+uses a JS path or publishes that guard path. Filesystem tests inject controlled
+temporary home facts. F_GETPATH/string equality alone cannot prove the broad-root
+identity check for case/firmlink/symlink aliases.
 Do not traverse a whole Mac or broaden to global providers.
 
 Propose one application-owned `ActivityGate`: idle, workspace change reserved,

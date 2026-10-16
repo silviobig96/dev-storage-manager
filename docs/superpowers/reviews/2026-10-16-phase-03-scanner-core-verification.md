@@ -22,7 +22,7 @@ workspace scan, release or Phase 04 feature is authorized.
 | Checkpoint                           | Tasks | Status                               |
 | ------------------------------------ | ----- | ------------------------------------ |
 | Isolated native verification         | 1     | Implemented; reviewed receipts below |
-| Contracts, policy and fixture engine | 2–5   | Task 2 in progress                   |
+| Contracts, policy and fixture engine | 2–5   | Tasks 2–3 verified; 4–5 not executed |
 | Gated application/IPC/minimal UI     | 6–10  | Not executed                         |
 | Functional/native/human acceptance   | 11    | Not executed                         |
 
@@ -159,3 +159,83 @@ SHA256 native test executable:
 SHA256 normal bundled executable:
 `12a75ce66faa406e099b038dff9ac054aeeea848302b73f527f0eb6e75a8f99c`.
 Normal bundle fixture-only launch remains Task 11, distinct from test-target QA.
+
+Task 1 formatting follow-up `c17508e` changes only origin.html formatting;
+`npm run format:check` and `git diff --check` then exited 0. No new native run
+is inferred from whitespace formatting; the receipts/hashes above stay tied to
+the explicitly tested source/artifacts.
+
+## Task 2 — core contracts and protection policy
+
+Commit `75ddb6b1361cf89eee83ca1bc9e53341b5d1f24c`. Independent task review approved
+spec compliance and quality with no findings. Core-only implementation; no
+scanner engine, filesystem adapter, service start, UI or dependency change.
+
+Five missing-contract RED cycles precede GREEN for quantities/limits, states and
+failures, read policy/protection, opaque IDs/snapshots and skip-code conversion.
+Missing definitions are identified as contract/compiler RED, not falsely
+reported as native/runtime behavioral failures. Final commands:
+
+- `cargo test -p dev-storage-core scan_ --locked`: exit 0, 10 passed.
+- `cargo test -p dev-storage-core --locked`: exit 0, 14 passed, doc-tests passed.
+- Scoped `rustfmt --check --edition 2021` for the four core files and
+  `git diff --check`: exit 0.
+
+Tests pin every mode budget and canonical u64 quantity, reject Number/negative/
+noncanonical/overflow input, distinguish null from observed zero, verify closed
+fixed messages and sealed Protected/no-actions/Unknown serialization, reject
+forged policy claims and deny unknown read/mount/cloud scope. Snapshot tests pin
+opaque token/time/state/coverage shape and absence of descendant paths/identities.
+
+These types do not establish future count/eligibility validation, dedup/overflow
+transactions, traversal/cancellation, session replay, native scanning or UI
+formatting; the owning later tasks must prove those behaviors. Whole frontend,
+workspace Rust and native suites were not redundantly repeated for this pure
+model/policy task. Checkpoint 2 remains in progress until Tasks 3–5 are verified.
+
+## Task 3 — anchored macOS metadata cursor
+
+Implementation commit `d125750`. Task-scoped tests and independent source review
+passed. Checkpoint 2 remains open until accounting and engine Tasks 4–5 pass.
+The cursor still has no application/IPC caller. Existing Phase 02 test adapters
+were updated explicitly; saved macos-v1 identity semantics remain unchanged.
+
+Actual commands reported against this source:
+
+- `cargo test -p dev-storage-platform scan_ --locked`: 19 passed.
+- `cargo test -p dev-storage-platform workspace_ --locked`: 6 passed.
+- `cargo clippy -p dev-storage-platform --all-targets --locked -- -D warnings`:
+  exit 0, no warnings.
+- `cargo fmt --all --check` and `git diff --check`: exit 0.
+- `cargo test -p dev-storage-application --no-run --locked` and
+  `cargo test -p dev-storage-manager --no-run --locked`: exit 0; these compile
+  affected test adapters, not an execution of those suites.
+
+Controlled native fixtures cover saved-root identity/replacement, selected-root
+symlink retargeting, descendant symlinks/loops/FIFO, Unicode and ordinary hidden/
+.git/node_modules directories, sparse length/allocation, replacement before
+openat and rename after acquisition. Syscall instrumentation records four
+descendant directory opens in the mixed fixture, all no-follow, with no regular
+contents, special-file or external-symlink-target opens. It does not claim that
+third-party filesystems perform no internal I/O. Cancellation at every before/
+after boundary closes acquired handles; the depth-32 fixture retains 33 cursors
+and closes all 33 directory streams. Cleanup itself is not cancellable.
+
+Home/volume-root, denied errno, cloud flags, missing/invalid attributes, mount
+facts, allocation edge cases and non-UTF-8 names were injected. APFS rejected
+creation of an invalid-UTF-8 fixture name; byte preservation was tested through
+native-dirent injection instead. No real account-home guard, cloud provider,
+mounted-volume crossing, permission-denied root or personal workspace traversal
+was probed. These limits are retained, not relabelled as live-volume evidence.
+
+Initial missing-contract/stub failures and four corrective RED→GREEN regressions
+preceded final success (invalid native type, missing mount fact, late root
+replacement and regular-file replacement). Other regression tests protect
+already-present behavior; they are not all claimed as individually observed RED.
+
+Independent review found no blocking correctness/scope defect. It noted a minor
+maintainability opportunity to move the large fixture module out of scanner.rs;
+this is recorded for whole-branch review, not silently dropped. The 36-descriptor
+session cap still needs Task 5 enforcement; the adapter proves one descriptor per
+frame, not concurrency control. Production home discovery remains unexercised
+at this checkpoint and will be distinguished from the later native runner tests.
