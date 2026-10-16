@@ -1,5 +1,5 @@
 .overview-view {
-  max-width: 880px;
+  inline-size: 100%;
 }
 .foundation-health {
   display: flex;
