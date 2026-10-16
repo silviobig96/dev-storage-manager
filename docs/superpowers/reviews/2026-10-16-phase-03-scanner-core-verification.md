@@ -23,7 +23,7 @@ workspace scan, release or Phase 04 feature is authorized.
 | ------------------------------------ | ----- | ------------------------------------ |
 | Isolated native verification         | 1     | Implemented; reviewed receipts below |
 | Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
-| Gated application/IPC/minimal UI     | 6–10  | Not executed                         |
+| Gated application/IPC/minimal UI     | 6–10  | Task 6 reviewed; 7–10 not executed   |
 | Functional/native/human acceptance   | 11    | Not executed                         |
 
 ## Inherited native obligations
@@ -348,3 +348,80 @@ and diff checks passed. The earlier 100-test workspace result belongs to
 `6294d8a`, not the fix; it was not redundantly rerun here. Final consolidated
 verification remains Task 11. Checkpoint 2 is implemented/reviewed with these
 precisely scoped receipts, not a whole-phase functional or native UI PASS.
+
+## Task 6 — owned sessions and configuration gate
+
+Implementation commit `fa4c9c2` plus fix `6ac72fe`; independent review and scoped
+re-review passed after the active-cancel reserve correction below. No Tauri,
+platform runner, frontend, migration or native-target change. The normal service
+still has no runner; a start cannot traverse until Tasks 7–8 pass their gates.
+Synthetic runners/failure injectors and the coordinator's test clock are cfg(test).
+
+Final task commands against this source:
+
+- `cargo test -p dev-storage-application scan_ --locked`: 17 passed.
+- `cargo test -p dev-storage-application workspace_ --locked`: 5 passed.
+- `cargo test -p dev-storage-persistence scan_ --locked`: 1 passed.
+- `cargo test --workspace --locked`: 121 passed (application 23, core 40,
+  Tauri 12, persistence 20, platform 26); doc-tests passed, no warnings.
+- `cargo clippy -p dev-storage-application -p dev-storage-persistence --all-targets --locked -- -D warnings`:
+  exit 0.
+- Scoped rustfmt checks for owned application/persistence files and
+  `git diff --check`: exit 0.
+- `cargo tree -p dev-storage-application -e normal --locked`: confirms the one
+  approved direct runtime edge to existing serde_json 1.0.151. Cargo.lock changes
+  only that application edge, not a package version/checksum/toolchain. The first
+  offline resolution refreshed the edge; subsequent checks use locked resolution.
+
+Observed RED→GREEN cycles cover compiling gate/query/service stubs, injected
+thread-spawn and clock failures, missing terminal diagnostics, an oversized
+callback incorrectly overwritten by a later small callback, empty-progress
+initialization failure misclassified as result_limit, and the explicit exit hook.
+Further already-green cases extend boundaries/read responsiveness without
+claiming every assertion had a prior failure.
+
+An accepted original-payload replay returns its retained session before gate or
+current-epoch rejection; conflicting payload is request_conflict. Unseen/evicted
+stale epochs reject before current-epoch busy requests. Blocked-runner tests keep
+workerActive true and mutations rejected after cancel, then release the barrier
+before terminal state and gate reuse. Health/list/manual check/replay respond
+without waiting on runner I/O. Finalization-before-cancel preserves terminal;
+cancel-before-finalization cannot become complete. Failed spawn retains the old
+epoch/result and releases its unused lease. No retained session resumes on restart.
+
+Actual serde_json encoding writes to a bounded counting sink. Internal root
+descriptors are tuples of ID, display name, selected/canonical paths and identity;
+the exact 32 KiB escaped boundary and +1 rejection occur before worker start.
+Every accepted initial/callback snapshot and terminal/fallback is encoded and
+checked; oversize freezes the last approved prefix, requests result_limit and
+cannot be overwritten by a later smaller raw report. No JSON is truncated or
+accepted diagnostic group dropped. Canonical entryAttempts travels with the
+retained prefix. Startup clock failure yields typed application_unavailable,
+never a successful null/fallback epoch, without disabling health/workspaces.
+
+Explicit Rust-only shutdown_scans and Drop request cancellation and suppress
+publication without joining blocked work; the worker retains its lease until
+return. Task 8 must attach the explicit operation to normal Tauri ExitRequested.
+The new-command real WK ACL matrix is still Task 7; these synthetic/core tests
+do not replace it. No whole-phase functional or UI acceptance is inferred here.
+
+Independent review found that active-stop reservation checked the
+quantity_overflow/Partial shape but not the larger Cancelled per-row shape.
+A 32-row boundary construction could admit a 126,941-byte snapshot with a
+126,976-byte overflow reserve, then reject its 127,015-byte cancellation
+acknowledgement. The control recorded cancellation but the returned snapshot
+could remain Running until actual worker completion. Terminal cancellation and
+lease ownership were not the defect. Fix `6ac72fe` checks both maximum-revision
+QuantityOverflow and larger Cancelled envelopes, including terminal reserves.
+The unsafe callback now stops result_limit before acceptance and preserves the
+last approved prefix. A separate largest-safe 126,883-byte callback immediately
+acknowledges Cancelling with 32 Cancelled rows while blocked; its maximum-revision
+active envelope is exactly 126,976 bytes and +1 is rejected. All eight stop
+reasons' active/terminal forms were encoded independently. No cap was enlarged.
+
+Two focused boundary tests first failed, then passed. Current-source
+`cargo test -p dev-storage-application scan_ --locked` passes 19 tests, app Clippy
+with all targets/locked/deny warnings passes, and scoped formatting/diff checks
+pass. The 121-test workspace run belongs to `fa4c9c2`, not this fix; final
+consolidated verification remains Task 11. Scoped re-review found the issue
+addressed with no new breakage. Task 6 is complete in its service-only scope.

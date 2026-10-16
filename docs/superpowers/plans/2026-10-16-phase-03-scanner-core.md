@@ -360,15 +360,17 @@ remain Tasks 6–7; no production native runner is connected by this checkpoint.
 
 ## Task 6: Coordinate owned sessions and configuration changes in application
 
-**Files:** Application `activity.rs`, `scans.rs`, `lib.rs`, `workspaces.rs`;
+**Files:** Application `activity.rs`, `scans.rs`, `scans/tests.rs` (cfg(test)), `lib.rs`, `workspaces.rs`;
 add bounded `Database::scan_roots_by_ids(&[WorkspaceId]) -> Result<Vec<StoredWorkspace>, WorkspaceFailure>`
 in existing persistence `workspaces.rs`, with covering tests. Core workspace
-error enum/message adds ScanInProgress; no migrations. No new production crates.
+error enum/message adds ScanInProgress; no migrations or new production package.
+Reuse the already-locked serde_json through one application runtime edge for
+actual bounded JSON-size measurement; no new version, package or extra serde edge.
 
 **Interfaces:** `ActivityGate::try_workspace_change(&self) -> Result<WorkspaceChangeGuard, WorkspaceFailure>`;
 `try_scan(&self) -> Result<ScanReservation, ScanFailure>`. `ApplicationService` owns
 gate and `ScanCoordinator`; `start_scan(&self, request: ScanRequest) -> Result<ScanSnapshot, ScanFailure>`,
-`current_scan(&self) -> ScanStatus`, `scan_session(&self, id: &ScanSessionId) -> Result<ScanSnapshot, ScanFailure>`,
+`current_scan(&self) -> Result<ScanStatus, ScanFailure>`, `scan_session(&self, id: &ScanSessionId) -> Result<ScanSnapshot, ScanFailure>`,
 `cancel_scan(&self, id: &ScanSessionId) -> Result<ScanSnapshot, ScanFailure>`.
 Tauri calls start through short existing blocking dispatch; the service starts
 one dedicated std thread which owns reservation/cursors until actual I/O stops.
@@ -383,41 +385,53 @@ returns application_unavailable. Add
 `new_with_scan_runner(adapter: A, database: Database, runner: Arc<dyn ScanRunner>) -> Self`
 for Rust dependency injection. Counted runners stay in tests; Task 8 alone wires
 the real runner into production. No frontend-injectable testing switch.
+`shutdown_scans(&self)` requests stop and suppresses publication idempotently,
+without joining a blocked worker; Drop is a fallback, not the sole process-exit hook.
+Successful ScanStatus retains a nonnullable epoch. If checked startup time cannot
+produce an epoch, current_scan/start return application_unavailable rather than
+inventing an epoch or making successful responses carry null; health/workspaces
+remain independent.
 
-- [ ] Write `scan_scope_resolves_ids`: zero/duplicate/33 IDs, unknown, disabled,
+- [x] Write `scan_scope_resolves_ids`: zero/duplicate/33 IDs, unknown, disabled,
       oversized path snapshot reject before adapter calls. Query returns only
       requested stored rows sorted by numeric ID; missing IDs do not broaden.
       SQLite read failure starts no worker. Existing schema 2/metadata unchanged.
       Include quotes/control characters in stored fixture paths: JSON-encoded
       descriptors at 32 KiB fit, one byte over rejects before work. No runner
       returns application_unavailable; failed thread spawn releases its guard.
-- [ ] Write `scan_activity_serializes`: held picker/change guard blocks start;
+- [x] Write `scan_activity_serializes`: held picker/change guard blocks start;
       scan validation/running/stopping/cancelling blocks every workspace write
       with scan_in_progress; root checks/list/health still respond. Guard movement
       through callback, dropped start/picker response and commit retains ownership.
       No reentrant add-gate deadlock. Barrier-blocked worker keeps the reservation
       after cancel until released; all mutation counters stay zero meanwhile.
-- [ ] Write `scan_idempotent_start`: same request/payload returns same session
+- [x] Write `scan_idempotent_start`: same request/payload returns same session
       after dropped receiver; adapter starts once.
       Replay with its original accepted expectedEpoch succeeds before busy/gate
       checks while that same session is validating/running/cancelling/stopping.
       It starts no worker and never revalidates its roots. Changed payload gives
-      request_conflict; different request while live gives scan_busy. After a
+      request_conflict; a different current-epoch request while live gives scan_busy. After a
       replacement session, evicted old request/epoch gives stale_epoch. Restart
       invalidates old epochs, has no active/retained result and starts nothing.
-- [ ] Write `scan_lifecycle`: injected barriers/clocks cover validating→running,
+- [x] Write `scan_lifecycle`: injected barriers/clocks cover validating→running,
       no-valid-root error, complete/partial, cancel during validation/work, budget
       stopping, finalize/cancel ordering and panic. Acknowledged cancellation has
       workerActive true until actual stop; only then terminal/guard reusable.
       While slow native I/O waits, health/list query completes without DB lock.
       On shutdown request stop/no publication, no automatic persisted restart.
-- [ ] Run `cargo test -p dev-storage-application scan_ --locked` and
+- [x] Run `cargo test -p dev-storage-application scan_ --locked` and
       `cargo test -p dev-storage-persistence scan_ --locked` RED/GREEN; rerun
       application workspace regression tests for the guarded mutations. Commit
       `feat: coordinate isolated scan sessions and workspace ownership`.
 
 **Exit:** Race-safe service and retained-worker model; schema/DB location intact.
 Native app integration stays gated on Task 1 ACL evidence.
+
+Execution receipt: `fa4c9c2` plus reviewed fix `6ac72fe`. Actual full JSON size
+checks reserve both non-cancellation and larger cancellation row envelopes;
+exact-bound multi-root tests retain active worker ownership and immediate
+acknowledgement. Service scope is reviewed; picker transport/native new-command
+ACL and production runner/exit hookup remain Tasks 7–8.
 
 ## Task 7: Register narrow scan commands and prove native authorization first
 
@@ -466,6 +480,8 @@ Task 6 ScanRunner by invoking Task 5 `scan`. Production setup consumes
 `MacOsAdapter.scan_filesystem()` and `ApplicationService::new_with_scan_runner`;
 the native target can supply controlled runners through that same constructor.
 There is no additional IPC, test-only product branch or alternate handler list.
+Normal Tauri ExitRequested calls shutdown_scans without preventing exit or waiting
+for native I/O. No public shutdown/diagnostic IPC is added.
 
 - [ ] Write `scan_native_integration`: seed temporary schema-2 roots and a
       sentinel, explicit native start yields genuine metadata metrics, no start
