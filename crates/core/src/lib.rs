@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+pub mod scanner;
 pub mod workspaces;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
