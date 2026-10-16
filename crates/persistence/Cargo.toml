@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+dev-storage-core = { path = "../core" }
 rusqlite = { version = "0.37", features = ["bundled"] }
 rusqlite_migration = "2.3"
 thiserror.workspace = true

@@ -9,3 +9,6 @@ dev-storage-core = { path = "../core" }
 dev-storage-persistence = { path = "../persistence" }
 dev-storage-platform = { path = "../platform" }
 thiserror.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

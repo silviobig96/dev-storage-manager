@@ -1,0 +1,78 @@
+.feedback-message {
+  --feedback-foreground: var(--text-secondary);
+  --feedback-background: var(--surface-secondary);
+  --feedback-border: var(--separator);
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.feedback-message--notice {
+  padding: var(--space-5);
+  border: 1px solid var(--feedback-border);
+  border-radius: var(--radius-control);
+  background: var(--feedback-background);
+}
+.feedback-message--inline {
+  flex-wrap: nowrap;
+  font-size: 12px;
+}
+.feedback-message > svg {
+  flex: none;
+  color: var(--feedback-foreground);
+}
+.feedback-message__body {
+  flex: 1 1 20ch;
+  min-inline-size: 0;
+}
+.feedback-message__title {
+  display: block;
+  font-weight: 550;
+}
+.feedback-message .feedback-message__description {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+}
+.feedback-message__title + .feedback-message__description {
+  margin-block-start: var(--space-1);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.feedback-message--inline .feedback-message__title {
+  color: var(--feedback-foreground);
+}
+.feedback-message__action {
+  margin-inline-start: auto;
+  align-self: center;
+}
+.feedback-message--info {
+  --feedback-foreground: var(--feedback-info);
+  --feedback-background: var(--feedback-info-surface);
+  --feedback-border: var(--feedback-info-border);
+}
+.feedback-message--success {
+  --feedback-foreground: var(--feedback-success);
+  --feedback-background: var(--feedback-success-surface);
+  --feedback-border: var(--feedback-success-border);
+}
+.feedback-message--warning {
+  --feedback-foreground: var(--feedback-warning);
+  --feedback-background: var(--feedback-warning-surface);
+  --feedback-border: var(--feedback-warning-border);
+}
+.feedback-message--error {
+  --feedback-foreground: var(--feedback-error);
+  --feedback-background: var(--feedback-error-surface);
+  --feedback-border: var(--feedback-error-border);
+}
+@media (prefers-contrast: more) {
+  .feedback-message--notice {
+    border-color: var(--feedback-foreground);
+  }
+}

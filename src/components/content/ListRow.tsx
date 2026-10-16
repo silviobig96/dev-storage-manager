@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import './content.css';
 
 export function ListRow({
@@ -6,14 +6,27 @@ export function ListRow({
   description,
   trailing,
   icon,
+  className = '',
+  rowRef,
+  tabIndex,
+  id,
 }: {
   label: ReactNode;
   description?: string;
   trailing?: ReactNode;
   icon?: ReactNode;
+  className?: string;
+  rowRef?: Ref<HTMLLIElement>;
+  tabIndex?: number;
+  id?: string;
 }) {
   return (
-    <li className="list-row">
+    <li
+      className={`list-row ${className}`}
+      ref={rowRef}
+      tabIndex={tabIndex}
+      id={id}
+    >
       {icon && <span className="list-row-icon">{icon}</span>}
       <div className="list-row-body">
         <div className="list-row-label">{label}</div>

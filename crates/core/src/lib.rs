@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub mod workspaces;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Platform {
     #[serde(rename = "macos")]

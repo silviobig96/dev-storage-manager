@@ -356,6 +356,30 @@ qualified. Uncertainty never changes a safety classification or creates
 permission. This state is documented here but not implemented with fake scan
 data in Phase 01.5.
 
+### Workspace feedback
+
+Workspace action feedback uses `FeedbackMessage`: a compact notice with a local
+SVG icon, readable text, a subtly tinted surface and a restrained border.
+Success, information, warning and error use separate `--feedback-*` foreground,
+surface and border tokens in both appearances. These tokens describe operation
+feedback, not the `SAFE`/`REVIEW`/`PROTECTED` storage safety classifications.
+
+View-level confirmations appear before the workspace section, not as detached
+footer text. They clear when the next action starts; there is no timed dismissal,
+floating toast, notification infrastructure or motion. Errors remain visible
+until another explicit operation changes the state; usable Retry/Reload controls
+belong inside their notice. Uncertain outcomes retain their existing explanation
+and reload gate rather than claiming rollback or success.
+
+Root availability stays inside its row using the unfilled inline variant, with
+a short label and supplemental explanation. `Available` means only that the root
+was found; its visible caption states that contents have not been checked.
+Missing/denied/unknown roots and overlaps have explicit warning text and icons.
+A manual check updates the row's polite live region instead of adding a generic
+success notice. Action confirmations are polite; request errors use `alert`.
+Icons are decorative to assistive technology, and no meaning relies on color.
+The feedback styles add no animation and strengthen borders at increased contrast.
+
 ## Safety presentation
 
 Safety information appears in compact rows, with classification subordinate to

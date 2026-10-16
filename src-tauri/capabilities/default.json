@@ -2,6 +2,16 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Core permissions for the main application window",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "local": true,
+  "webviews": ["main"],
+  "permissions": [
+    "core:default",
+    "allow-get-app-health",
+    "allow-list-workspaces",
+    "allow-select-and-add-workspace",
+    "allow-remove-workspace",
+    "allow-set-workspace-enabled",
+    "allow-check-workspace",
+    "allow-skip-workspace-setup"
+  ]
 }
