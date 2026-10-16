@@ -25,7 +25,7 @@ export function WorkspaceRow({
   rowRef?: Ref<HTMLLIElement>;
   onEnabled: (id: string, enabled: boolean) => void;
   onCheck: (id: string) => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, trigger: HTMLButtonElement) => void;
 }) {
   const identity = `${workspace.displayName} — ${workspace.selectedPath}`;
   const availability = observation?.state ?? 'pending';
@@ -86,7 +86,7 @@ export function WorkspaceRow({
           <Button
             disabled={busy}
             aria-label={`Remove workspace ${identity}`}
-            onClick={() => onRemove(workspace.id)}
+            onClick={(event) => onRemove(workspace.id, event.currentTarget)}
           >
             Remove workspace
           </Button>

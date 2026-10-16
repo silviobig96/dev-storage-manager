@@ -146,7 +146,7 @@ export function WorkspacesView({
       /* Preserve committed state and the controller's error. */
     }
   }
-  function requestRemove(id: string) {
+  function requestRemove(id: string, trigger: HTMLButtonElement) {
     const index = listing?.workspaces.findIndex((row) => row.id === id) ?? -1;
     const workspace = listing?.workspaces[index];
     if (!workspace || !listing) return;
@@ -154,7 +154,7 @@ export function WorkspacesView({
     setDialogError(null);
     setRemoval({
       workspace,
-      invoker: document.activeElement as HTMLElement | null,
+      invoker: trigger,
       neighbors: [
         ...listing.workspaces.slice(index + 1),
         ...listing.workspaces.slice(0, index).reverse(),

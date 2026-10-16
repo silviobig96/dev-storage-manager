@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkspacesView } from './WorkspacesView';
@@ -352,6 +352,35 @@ describe('Workspaces view', () => {
     expect(invoker).toHaveFocus();
     expect(dialogPresentAtFocus).toBe(false);
   });
+
+  it.each(['Cancel', 'Escape'] as const)(
+    'restores the actual Remove trigger on %s when activation leaves focus on the row',
+    async (dismissal) => {
+      render(<Harness />);
+      const trigger = await screen.findByRole('button', {
+        name: action('Remove workspace'),
+      });
+      const row = screen.getByText(first.selectedPath).closest('li');
+      row?.focus();
+      expect(row).toHaveFocus();
+      // WebKit mouse/AX activation need not focus the clicked button.
+      // fireEvent preserves that pre-existing focus, unlike userEvent.click.
+      fireEvent.click(trigger);
+      const dialog = screen.getByRole('dialog');
+      expect(
+        within(dialog).getByRole('button', { name: 'Cancel' }),
+      ).toHaveFocus();
+      if (dismissal === 'Cancel') {
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+      } else {
+        // jsdom does not deliver native Escape; exercise its cancel event.
+        fireEvent(dialog, new Event('cancel', { cancelable: true }));
+      }
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+      expect(api.removeWorkspace).not.toHaveBeenCalled();
+    },
+  );
 
   it('gates uncertain mutation retries until a successful reload and recovers focus when removal committed', async () => {
     vi.mocked(api.removeWorkspace).mockRejectedValue(
