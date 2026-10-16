@@ -23,11 +23,13 @@ interface Removal {
 export function WorkspacesView({
   workspaces,
   headingRef,
+  initialAnnouncement = '',
 }: {
   workspaces: WorkspacesController;
   headingRef?: Ref<HTMLHeadingElement>;
+  initialAnnouncement?: string;
 }) {
-  const [announcement, setAnnouncement] = useState('');
+  const [announcement, setAnnouncement] = useState(initialAnnouncement);
   const [removal, setRemoval] = useState<Removal | null>(null);
   const [removing, setRemoving] = useState(false);
   const [dialogError, setDialogError] = useState<WorkspaceCommandError | null>(

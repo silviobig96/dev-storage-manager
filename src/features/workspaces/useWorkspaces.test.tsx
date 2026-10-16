@@ -388,6 +388,58 @@ it('a successful commit survives a failed follow-up list', async () => {
   expect(result.current.error).toBeInstanceOf(WorkspaceCommandError);
 });
 
+it('a concurrent failed check cannot clear uncertainty from a lost mutation response', async () => {
+  const other = { ...row, id: '8', selectedPath: '/fixture/other' };
+  const two = { ...configured, workspaces: [row, other] };
+  const { result } = await ready(two);
+  const check = deferred<{
+    id: string;
+    availability: AvailabilityObservation;
+  }>();
+  ipc
+    .mockReturnValueOnce(check.promise)
+    .mockRejectedValueOnce(new Error('lost remove'))
+    .mockRejectedValueOnce(new Error('offline'));
+  let checking!: Promise<unknown>;
+  await act(async () => {
+    checking = result.current.check('7').catch((error: unknown) => error);
+    await expect(result.current.remove('8')).rejects.toMatchObject({
+      outcomeUnknown: true,
+      requiresReload: true,
+    });
+  });
+  await act(async () => {
+    check.reject({ code: 'application_unavailable' });
+    await checking;
+  });
+  expect(await checking).toMatchObject({
+    source: 'backend',
+    outcomeUnknown: false,
+  });
+  expect(result.current.error).toMatchObject({
+    outcomeUnknown: true,
+    requiresReload: true,
+  });
+  expect(result.current.state).toEqual({ status: 'ready', listing: two });
+  ipc.mockRejectedValueOnce(new Error('still offline'));
+  await act(async () => {
+    await expect(result.current.add()).rejects.toMatchObject({
+      requiresReload: true,
+    });
+  });
+  expect(
+    ipc.mock.calls.filter(([name]) => name === 'remove_workspace'),
+  ).toHaveLength(1);
+  expect(
+    ipc.mock.calls.filter(([name]) => name === 'select_and_add_workspace'),
+  ).toHaveLength(0);
+  ipc.mockResolvedValueOnce(two);
+  await act(async () => {
+    await result.current.reload();
+  });
+  expect(result.current.error).toBeNull();
+});
+
 it('manual reload failures preserve uncertainty until an authoritative list succeeds', async () => {
   const { result } = await ready();
   ipc

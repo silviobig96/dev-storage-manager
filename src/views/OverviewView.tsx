@@ -7,14 +7,16 @@ import { EmptyState } from '../components/content/EmptyState';
 import { AppIcon } from '../components/ui/AppIcon';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
 import './OverviewView.css';
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 export function OverviewView({
   healthState,
   headingRef,
+  setup,
 }: {
   healthState: HealthState;
   headingRef?: Ref<HTMLHeadingElement>;
+  setup?: ReactNode;
 }) {
   return (
     <div className="overview-view">
@@ -23,6 +25,7 @@ export function OverviewView({
         headingRef={headingRef}
         description="Developer storage on this Mac."
       />
+      {setup}
       <Section title="Storage overview">
         <EmptyState
           title="No storage analysis yet"

@@ -114,6 +114,184 @@ describe('App', () => {
     expect(await screen.findByText('No workspaces added')).toBeVisible();
   });
 
+  it.each(['added', 'duplicate'] as const)(
+    'preserves later explicit navigation when setup Add returns %s',
+    async (status) => {
+      const row = {
+        id: '1',
+        displayName: 'Code',
+        selectedPath: '/fixture/Code',
+        enabled: true,
+        createdAt: 1,
+        updatedAt: 1,
+      };
+      vi.mocked(listWorkspaces)
+        .mockResolvedValueOnce({
+          setupState: 'undecided',
+          workspaces: [],
+          overlaps: [],
+        })
+        .mockResolvedValue({
+          setupState: 'configured',
+          workspaces: [row],
+          overlaps: [],
+        });
+      const selection =
+        deferred<Awaited<ReturnType<typeof selectAndAddWorkspace>>>();
+      vi.mocked(selectAndAddWorkspace).mockReturnValue(selection.promise);
+      render(<App />);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Add workspace' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+      const heading = screen.getByRole('heading', {
+        level: 1,
+        name: 'Overview',
+      });
+      expect(heading).toHaveFocus();
+      await act(async () => {
+        selection.resolve(
+          status === 'duplicate'
+            ? { status, existingId: '1' }
+            : {
+                status,
+                workspace: row,
+                availability: { state: 'present', reason: null, checkedAt: 1 },
+              },
+        );
+        await selection.promise;
+      });
+      expect(
+        screen.getByRole('main', { name: 'Overview content' }),
+      ).toBeVisible();
+      expect(heading).toHaveFocus();
+      expect(
+        screen.queryByText('Workspace added. No files were scanned.'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('This folder is already configured.'),
+      ).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Workspaces' }));
+      expect(screen.getByText(row.selectedPath)).toBeVisible();
+      expect(selectAndAddWorkspace).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('does not restore a cancelled setup picker over a later explicit Overview focus', async () => {
+    vi.mocked(listWorkspaces).mockResolvedValue({
+      setupState: 'undecided',
+      workspaces: [],
+      overlaps: [],
+    });
+    const selection =
+      deferred<Awaited<ReturnType<typeof selectAndAddWorkspace>>>();
+    vi.mocked(selectAndAddWorkspace).mockReturnValue(selection.promise);
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add workspace' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    const heading = screen.getByRole('heading', { level: 1, name: 'Overview' });
+    await act(async () => {
+      selection.resolve({ status: 'cancelled' });
+      await selection.promise;
+    });
+    expect(heading).toHaveFocus();
+  });
+
+  it('places optional setup after the Overview header and before storage content', async () => {
+    vi.mocked(listWorkspaces).mockResolvedValue({
+      setupState: 'undecided',
+      workspaces: [],
+      overlaps: [],
+    });
+    render(<App />);
+    const setup = await screen.findByRole('region', {
+      name: 'Choose workspace folders',
+    });
+    const heading = screen.getByRole('heading', { level: 1, name: 'Overview' });
+    const storage = screen.getByRole('region', { name: 'Storage overview' });
+    expect(
+      heading.compareDocumentPosition(setup) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      setup.compareDocumentPosition(storage) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole('button', { name: 'Add workspace' }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole('button', { name: 'Skip for now' }),
+    ).toHaveLength(1);
+  });
+
+  it('consumes setup success so a later removal and reload cannot revive its announcement', async () => {
+    const row = {
+      id: '1',
+      displayName: 'Code',
+      selectedPath: '/fixture/Code',
+      enabled: true,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    vi.mocked(listWorkspaces)
+      .mockResolvedValueOnce({
+        setupState: 'undecided',
+        workspaces: [],
+        overlaps: [],
+      })
+      .mockResolvedValueOnce({
+        setupState: 'configured',
+        workspaces: [row],
+        overlaps: [],
+      })
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({
+        setupState: 'configured',
+        workspaces: [],
+        overlaps: [],
+      });
+    vi.mocked(selectAndAddWorkspace).mockResolvedValue({
+      status: 'added',
+      workspace: row,
+      availability: { state: 'present', reason: null, checkedAt: 1 },
+    });
+    vi.mocked(removeWorkspace).mockRejectedValue(new Error('lost response'));
+    HTMLDialogElement.prototype.showModal = function () {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close = function () {
+      this.open = false;
+    };
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add workspace' }),
+    );
+    expect(
+      screen.getByText('Workspace added. No files were scanned.'),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove workspace Code — /fixture/Code',
+      }),
+    );
+    expect(
+      screen.queryByText('Workspace added. No files were scanned.'),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove workspace' }),
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reload workspaces' }),
+    );
+    expect(screen.getByText('No workspaces added')).toBeVisible();
+    expect(
+      screen.queryByText('Workspace added. No files were scanned.'),
+    ).not.toBeInTheDocument();
+    expect(removeWorkspace).toHaveBeenCalledOnce();
+  });
+
   it('retains a manual availability check through navigation without moving focus on completion', async () => {
     const row = {
       id: '1',

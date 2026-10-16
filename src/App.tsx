@@ -17,6 +17,8 @@ function App() {
   const [currentView, setCurrentView] = useState<AppView>('overview');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<'heading' | { row: string } | null>(null);
+  const navigationIntent = useRef(0);
+  const [navigationGeneration, setNavigationGeneration] = useState(0);
   const [announcement, setAnnouncement] = useState('');
   const [healthState, setHealthState] = useState<HealthState>({
     status: 'loading',
@@ -51,6 +53,8 @@ function App() {
   }, [currentView, announcement]);
 
   function navigate(view: AppView) {
+    navigationIntent.current += 1;
+    setNavigationGeneration(navigationIntent.current);
     if (view === currentView) {
       headingRef.current?.focus();
       return;
@@ -61,9 +65,11 @@ function App() {
   }
 
   async function addFromSetup() {
+    const intent = navigationIntent.current;
     const invoker = document.activeElement as HTMLElement | null;
     try {
       const result = await workspaces.add();
+      if (intent !== navigationIntent.current) return;
       if (result.status === 'cancelled') {
         invoker?.focus();
         return;
@@ -81,16 +87,18 @@ function App() {
       );
       setCurrentView('workspaces');
     } catch {
-      invoker?.focus();
+      if (intent === navigationIntent.current) invoker?.focus();
     }
   }
 
   return (
     <AppShell currentView={currentView} onNavigate={navigate}>
       {currentView === 'overview' ? (
-        <>
-          <OverviewView healthState={healthState} headingRef={headingRef} />
-          {workspaces.state.status === 'ready' &&
+        <OverviewView
+          healthState={healthState}
+          headingRef={headingRef}
+          setup={
+            workspaces.state.status === 'ready' &&
             workspaces.state.listing.setupState === 'undecided' && (
               <>
                 <WorkspaceSetup
@@ -100,6 +108,7 @@ function App() {
                   error={workspaces.error}
                   onAdd={addFromSetup}
                   onSkip={() => workspaces.skip()}
+                  focusGeneration={navigationGeneration}
                 />
                 {workspaces.error?.requiresReload && (
                   <Button
@@ -111,15 +120,15 @@ function App() {
                   </Button>
                 )}
               </>
-            )}
-        </>
+            )
+          }
+        />
       ) : (
-        <WorkspacesView workspaces={workspaces} headingRef={headingRef} />
-      )}
-      {announcement && !workspaces.error && (
-        <p role="status" aria-live="polite">
-          {announcement}
-        </p>
+        <WorkspacesView
+          workspaces={workspaces}
+          headingRef={headingRef}
+          initialAnnouncement={announcement}
+        />
       )}
     </AppShell>
   );

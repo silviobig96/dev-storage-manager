@@ -59,6 +59,25 @@ export function useWorkspaces(): WorkspacesController {
   const mutations = useRef(new Set<string>());
   const needsReconciliation = useRef(false);
 
+  const publishError = useCallback((next: WorkspaceCommandError | null) => {
+    setError((current) => {
+      if (!needsReconciliation.current) return next;
+      // Another row's result cannot resolve a lost mutation. Only a current,
+      // authoritative list may clear the reconciliation requirement.
+      const failure =
+        next ??
+        current ??
+        new WorkspaceCommandError('application_unavailable', 'transport');
+      return new WorkspaceCommandError(
+        failure.code,
+        failure.source,
+        failure.existingId,
+        true,
+        true,
+      );
+    });
+  }, []);
+
   const isCurrent = useCallback(
     (generation: number) => active.current && session.current === generation,
     [],
@@ -104,7 +123,7 @@ export function useWorkspaces(): WorkspacesController {
       ) {
         needsReconciliation.current = false;
         publishListing(next);
-        setError(null);
+        publishError(null);
       }
     } catch (failure) {
       const failureError = toWorkspaceCommandError(failure);
@@ -124,13 +143,13 @@ export function useWorkspaces(): WorkspacesController {
         request === listRequest.current &&
         version === revision.current
       ) {
-        setError(commandError);
+        publishError(commandError);
         if (!listing.current)
           setState({ status: 'error', error: commandError });
       }
       throw commandError;
     }
-  }, [isCurrent, publishListing]);
+  }, [isCurrent, publishListing, publishError]);
 
   useEffect(() => {
     active.current = true;
@@ -169,7 +188,7 @@ export function useWorkspaces(): WorkspacesController {
     mutations.current.add(key);
     if (key === 'add') setAdding(true);
     else if (key !== 'skip') markBusy(key, token, true);
-    setError(null);
+    publishError(null);
     // A list requested before this operation cannot describe its committed result.
     revision.current += 1;
     listRequest.current += 1;
@@ -234,7 +253,7 @@ export function useWorkspaces(): WorkspacesController {
       return result;
     } catch (failure) {
       const commandError = toWorkspaceCommandError(failure);
-      if (isCurrent(generation)) setError(commandError);
+      if (isCurrent(generation)) publishError(commandError);
       throw commandError;
     } finally {
       if (isCurrent(generation)) {
@@ -340,7 +359,7 @@ export function useWorkspaces(): WorkspacesController {
     checkRequests.current.set(id, token);
     markBusy(id, token, true);
     publishObservations();
-    setError(null);
+    publishError(null);
     const current = () =>
       isCurrent(generation) &&
       checkRequests.current.get(id) === token &&
@@ -369,7 +388,7 @@ export function useWorkspaces(): WorkspacesController {
           }
         }
         if (isCurrent(generation) && !checkRequests.current.has(id))
-          setError(commandError);
+          publishError(commandError);
       }
       throw commandError;
     } finally {

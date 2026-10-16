@@ -8,25 +8,33 @@ export function WorkspaceSetup({
   error,
   onAdd,
   onSkip,
+  focusGeneration = 0,
 }: {
   adding: boolean;
   error: Error | null;
   onAdd: () => unknown;
   onSkip: () => unknown;
+  focusGeneration?: number;
 }) {
   const pending = useRef(false);
   const invoker = useRef<HTMLElement | null>(null);
+  const invokerGeneration = useRef(0);
   const [busy, setBusy] = useState(false);
   useLayoutEffect(() => {
-    if (!busy && !adding && invoker.current?.isConnected) {
-      invoker.current.focus();
+    if (!busy && !adding && invoker.current) {
+      if (
+        invoker.current.isConnected &&
+        invokerGeneration.current === focusGeneration
+      )
+        invoker.current.focus();
       invoker.current = null;
     }
-  }, [busy, adding]);
+  }, [busy, adding, focusGeneration]);
   async function choose(action: () => unknown) {
     if (pending.current || adding) return;
     pending.current = true;
     invoker.current = document.activeElement as HTMLElement | null;
+    invokerGeneration.current = focusGeneration;
     setBusy(true);
     try {
       await action();

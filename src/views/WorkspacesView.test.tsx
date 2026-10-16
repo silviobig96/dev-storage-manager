@@ -428,6 +428,52 @@ describe('Workspaces view', () => {
     ).toBeDisabled();
   });
 
+  it('keeps mutation controls gated when another row Check rejects after uncertain removal', async () => {
+    const check = deferred<api.CheckWorkspaceResult>();
+    vi.mocked(api.checkWorkspace).mockReturnValue(check.promise);
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing())
+      .mockRejectedValue(new Error('offline'));
+    vi.mocked(api.removeWorkspace).mockRejectedValue(
+      new Error('lost response'),
+    );
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: action('Check availability for'),
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: action('Remove workspace', second) }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Remove workspace',
+      }),
+    );
+    await act(async () => {
+      check.reject(new api.WorkspaceCommandError('application_unavailable'));
+      await check.promise.catch(() => undefined);
+    });
+    const dialog = screen.getByRole('dialog');
+    expect(
+      within(dialog).getByRole('button', { name: 'Remove workspace' }),
+    ).toBeDisabled();
+    expect(
+      within(dialog).getByRole('button', { name: 'Reload workspaces' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Add workspace' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('checkbox', { name: action('Enabled for') }),
+    ).toBeDisabled();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Remove workspace' }),
+    );
+    expect(api.removeWorkspace).toHaveBeenCalledExactlyOnceWith('2');
+  });
+
   it('catches a rejected manual Check and keeps the prior observation actionable', async () => {
     vi.mocked(api.checkWorkspace).mockRejectedValue(
       new api.WorkspaceCommandError('application_unavailable'),

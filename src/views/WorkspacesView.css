@@ -3,7 +3,7 @@
   min-inline-size: 0;
 }
 .workspace-setup {
-  margin-top: var(--space-8);
+  margin-block: var(--space-8);
 }
 .workspace-actions {
   display: flex;
