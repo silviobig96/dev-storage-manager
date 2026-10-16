@@ -187,6 +187,7 @@ mod tests {
             worker_active: true,
             stop_reason: None,
             failure: None,
+            entry_attempts: DecimalQuantity(0),
             workspaces: vec![WorkspaceScanResult {
                 workspace_id: WorkspaceId::try_from(7).unwrap(),
                 display_name: "synthetic".into(),

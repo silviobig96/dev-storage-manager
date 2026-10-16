@@ -31,7 +31,9 @@ pub trait ScanIoControl: Send + Sync {
     fn checkpoint(&self) -> Result<(), StopReason>;
 }
 
-/// Metadata-only platform boundary; names never leave Rust.
+/// Metadata-only platform boundary; names never leave Rust. Root acquisition
+/// uses at most three simultaneous descriptors and returns one supported,
+/// authorized directory cursor. The engine closes prior roots before anchoring.
 pub trait ScanFilesystem: Send + Sync {
     fn anchor_root(
         &self,
@@ -224,6 +226,8 @@ pub struct ScanSnapshot {
     pub worker_active: bool,
     pub stop_reason: Option<StopReason>,
     pub failure: Option<ScanFailure>,
+    /// Issued cursor next_entry calls, including EOF/failure; not measured objects.
+    pub entry_attempts: DecimalQuantity,
     pub workspaces: Vec<WorkspaceScanResult>,
     pub metrics: ScanMetrics,
     pub coverage: Coverage,
@@ -474,6 +478,16 @@ pub struct ScanLimits {
 }
 
 impl ScanLimits {
+    #[cfg(test)]
+    pub(super) fn for_test(depth: usize, attempts: u64, identities: u64, descriptors: usize) -> Self {
+        Self {
+            max_child_depth: depth,
+            max_entry_attempts: attempts,
+            max_identity_records: identities,
+            max_descriptors: descriptors,
+            ..Self::for_mode(ScanMode::Quick)
+        }
+    }
     pub const fn for_mode(mode: ScanMode) -> Self {
         let (entries, depth, elapsed, slots) = match mode {
             ScanMode::Quick => (25_000, 8, 5_000, 65_536),
@@ -770,7 +784,7 @@ mod tests {
             "epoch": "p42-t1234567890123456789-g1",
             "mode": "quick", "state": "validating", "revision": "9007199254740993",
             "startedAt": "1792108800000", "finishedAt": null, "workerActive": true,
-            "stopReason": null, "failure": null,
+            "stopReason": null, "failure": null, "entryAttempts": "9007199254740993",
             "workspaces": [{
                 "workspaceId": "1", "displayName": "fixture", "selectedPath": "/fixture",
                 "state": "pending", "metrics": null, "coverage": "unavailable", "coveredByWorkspaceIds": []
