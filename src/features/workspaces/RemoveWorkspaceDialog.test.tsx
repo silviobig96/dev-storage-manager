@@ -20,6 +20,24 @@ beforeEach(() => {
   };
 });
 describe('remove workspace confirmation', () => {
+  it('keeps a removal failure visible with an explanatory heading and decorative icon', () => {
+    render(
+      <RemoveWorkspaceDialog
+        workspace={workspace}
+        busy={false}
+        error={new Error("Couldn't save workspace changes. Try again.")}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    const error = screen.getByRole('alert');
+    expect(error).toHaveTextContent('Removal needs attention');
+    expect(error).toHaveTextContent(
+      "Couldn't save workspace changes. Try again.",
+    );
+    expect(error.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+  });
   it('starts on Cancel, identifies full path and cancels Escape without sending an ID', () => {
     const cancel = vi.fn();
     const confirm = vi.fn();

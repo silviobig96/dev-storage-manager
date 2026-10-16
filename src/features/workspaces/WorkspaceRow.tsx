@@ -1,6 +1,10 @@
 import type { Ref } from 'react';
 import { ListRow } from '../../components/content/ListRow';
 import { Button } from '../../components/ui/Button';
+import {
+  FeedbackMessage,
+  type FeedbackTone,
+} from '../../components/ui/FeedbackMessage';
 import type {
   AvailabilityObservation,
   WorkspaceRecord,
@@ -29,14 +33,43 @@ export function WorkspaceRow({
 }) {
   const identity = `${workspace.displayName} — ${workspace.selectedPath}`;
   const availability = observation?.state ?? 'pending';
-  const meaning = {
-    pending: checking ? 'Checking folder…' : 'Not checked',
-    present: 'Folder found. Access to its contents has not been checked.',
-    missing:
-      'Folder not found. Reconnect the disk or check the saved location.',
-    denied: 'Access to this folder was denied.',
-    unknown: "Couldn't confirm availability. Try checking again.",
-  }[availability];
+  const status: Record<
+    typeof availability,
+    { tone: FeedbackTone; title: string; description?: string }
+  > = {
+    pending: {
+      tone: checking ? 'info' : 'neutral',
+      title: checking ? 'Checking folder…' : 'Not checked',
+    },
+    present: {
+      tone: 'success',
+      title: 'Available',
+      description: 'Contents have not been checked.',
+    },
+    missing: {
+      tone: 'warning',
+      title: 'Folder unavailable',
+      description:
+        'Folder not found. Reconnect the disk or check the saved location.',
+    },
+    denied: {
+      tone: 'warning',
+      title: 'Access denied',
+      description: 'Access to this folder was denied.',
+    },
+    unknown: {
+      tone: 'warning',
+      title:
+        observation?.reason === 'identity_changed'
+          ? 'Location changed'
+          : 'Availability unknown',
+      description:
+        observation?.reason === 'identity_changed'
+          ? 'The location now refers to a different folder. Remove and add it again to change configuration.'
+          : "Couldn't confirm availability. Try checking again.",
+    },
+  };
+  const meaning = status[availability];
   return (
     <ListRow
       className="workspace-row"
@@ -47,18 +80,32 @@ export function WorkspaceRow({
         <>
           <span>{workspace.displayName}</span>
           <p className="workspace-path">{workspace.selectedPath}</p>
-          <p>{meaning}</p>
-          {observation?.reason === 'identity_changed' && (
-            <p>
-              The location now refers to a different folder. Remove and add it
-              again to change configuration.
-            </p>
-          )}
+          <div
+            className="workspace-availability"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <FeedbackMessage
+              tone={meaning.tone}
+              title={meaning.title}
+              variant="inline"
+              announce={false}
+            >
+              {meaning.description}
+            </FeedbackMessage>
+          </div>
           {overlap && (
-            <p>
-              Overlaps another workspace. Future analysis must avoid double
-              counting.
-            </p>
+            <div className="workspace-overlap">
+              <FeedbackMessage
+                tone="warning"
+                title="Overlapping folders"
+                variant="inline"
+                announce={false}
+              >
+                Overlaps another workspace. Future analysis must avoid double
+                counting.
+              </FeedbackMessage>
+            </div>
           )}
         </>
       }

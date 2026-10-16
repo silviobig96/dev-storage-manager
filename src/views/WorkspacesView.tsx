@@ -5,6 +5,10 @@ import { Section } from '../components/content/Section';
 import { DataList } from '../components/content/DataList';
 import { EmptyState } from '../components/content/EmptyState';
 import { Button } from '../components/ui/Button';
+import {
+  FeedbackMessage,
+  type FeedbackNotice,
+} from '../components/ui/FeedbackMessage';
 import { WorkspaceRow } from '../features/workspaces/WorkspaceRow';
 import { RemoveWorkspaceDialog } from '../features/workspaces/RemoveWorkspaceDialog';
 import {
@@ -23,13 +27,15 @@ interface Removal {
 export function WorkspacesView({
   workspaces,
   headingRef,
-  initialAnnouncement = '',
+  initialFeedback = null,
 }: {
   workspaces: WorkspacesController;
   headingRef?: Ref<HTMLHeadingElement>;
-  initialAnnouncement?: string;
+  initialFeedback?: FeedbackNotice | null;
 }) {
-  const [announcement, setAnnouncement] = useState(initialAnnouncement);
+  const [announcement, setAnnouncement] = useState<FeedbackNotice | null>(
+    initialFeedback,
+  );
   const [removal, setRemoval] = useState<Removal | null>(null);
   const [removing, setRemoving] = useState(false);
   const [dialogError, setDialogError] = useState<WorkspaceCommandError | null>(
@@ -86,7 +92,7 @@ export function WorkspacesView({
   });
 
   async function reload() {
-    setAnnouncement('');
+    setAnnouncement(null);
     try {
       await workspaces.reload();
       setDialogError(null);
@@ -98,14 +104,20 @@ export function WorkspacesView({
     if (addPending.current || workspaces.adding || requiresReload) return;
     addPending.current = true;
     const invoker = document.activeElement as HTMLElement | null;
-    setAnnouncement('');
+    setAnnouncement(null);
     try {
       const result = await workspaces.add();
       if (result.status === 'duplicate') {
-        setAnnouncement('This folder is already configured.');
+        setAnnouncement({
+          tone: 'info',
+          message: 'This folder is already configured.',
+        });
         rowElements.current.get(result.existingId)?.focus();
       } else if (result.status === 'added') {
-        setAnnouncement('Workspace added. No files were scanned.');
+        setAnnouncement({
+          tone: 'success',
+          message: 'Workspace added. No files were scanned.',
+        });
         pendingInvoker.current = addButton.current;
       } else pendingInvoker.current = invoker;
     } catch {
@@ -117,7 +129,7 @@ export function WorkspacesView({
   async function skip() {
     if (skipPending.current || requiresReload) return;
     skipPending.current = true;
-    setAnnouncement('');
+    setAnnouncement(null);
     setSkipping(true);
     try {
       await workspaces.skip();
@@ -129,19 +141,21 @@ export function WorkspacesView({
     }
   }
   async function check(id: string) {
-    setAnnouncement('');
+    setAnnouncement(null);
     try {
       await workspaces.check(id);
-      setAnnouncement('Folder availability checked.');
     } catch {
       /* Error comes from the controller. */
     }
   }
   async function setEnabled(id: string, enabled: boolean) {
-    setAnnouncement('');
+    setAnnouncement(null);
     try {
-      await workspaces.setEnabled(id, enabled);
-      setAnnouncement('Workspace changes saved.');
+      const saved = await workspaces.setEnabled(id, enabled);
+      setAnnouncement({
+        tone: 'success',
+        message: saved.enabled ? 'Workspace enabled.' : 'Workspace disabled.',
+      });
     } catch {
       /* Preserve committed state and the controller's error. */
     }
@@ -150,7 +164,7 @@ export function WorkspacesView({
     const index = listing?.workspaces.findIndex((row) => row.id === id) ?? -1;
     const workspace = listing?.workspaces[index];
     if (!workspace || !listing) return;
-    setAnnouncement('');
+    setAnnouncement(null);
     setDialogError(null);
     setRemoval({
       workspace,
@@ -176,7 +190,10 @@ export function WorkspacesView({
       await workspaces.remove(id);
       pendingFocus.current = removal.neighbors;
       setRemoval(null);
-      setAnnouncement('Workspace removed from the app.');
+      setAnnouncement({
+        tone: 'success',
+        message: 'Workspace removed from the app.',
+      });
     } catch (failure) {
       setDialogError(toWorkspaceCommandError(failure));
     } finally {
@@ -204,38 +221,69 @@ export function WorkspacesView({
         headingRef={headingRef}
       />
       {workspaces.state.status === 'loading' && (
-        <p role="status">Loading workspaces…</p>
+        <FeedbackMessage tone="info">Loading workspaces…</FeedbackMessage>
       )}
       {workspaces.state.status === 'error' && (
-        <div>
-          <p role="alert">Couldn't load workspaces.</p>
-          <Button
-            onClick={() => {
-              void reload();
-            }}
-          >
-            Retry
-          </Button>
-        </div>
+        <FeedbackMessage
+          tone="error"
+          title="Couldn't load workspaces."
+          action={
+            <Button
+              onClick={() => {
+                void reload();
+              }}
+            >
+              Retry
+            </Button>
+          }
+        >
+          Try loading your workspace list again.
+        </FeedbackMessage>
       )}
       {listing && (
         <>
           {!activeRemoval && workspaces.error && (
-            <div>
-              <p className="workspace-error" role="alert">
+            <div className="workspace-feedback-error">
+              <FeedbackMessage
+                tone="error"
+                title="Workspace needs attention"
+                action={
+                  requiresReload && (
+                    <Button
+                      onClick={() => {
+                        void reload();
+                      }}
+                    >
+                      Reload workspaces
+                    </Button>
+                  )
+                }
+              >
                 {workspaces.error.message}
-              </p>
-              {requiresReload && (
-                <Button
-                  onClick={() => {
-                    void reload();
-                  }}
-                >
-                  Reload workspaces
-                </Button>
-              )}
+              </FeedbackMessage>
             </div>
           )}
+          <div
+            className="workspace-announcement"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {!workspaces.error &&
+              (workspaces.adding || removing ? (
+                <FeedbackMessage tone="info" announce={false}>
+                  {workspaces.adding
+                    ? 'Adding workspace…'
+                    : 'Saving workspace changes…'}
+                </FeedbackMessage>
+              ) : (
+                announcement && (
+                  <FeedbackMessage tone={announcement.tone} announce={false}>
+                    {announcement.message}
+                  </FeedbackMessage>
+                )
+              ))}
+          </div>
           <Section title="Workspace folders">
             {listing.workspaces.length === 0 ? (
               <>
@@ -296,18 +344,6 @@ export function WorkspacesView({
               </>
             )}
           </Section>
-          <p
-            className="workspace-announcement"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {workspaces.adding
-              ? 'Adding workspace…'
-              : removing
-                ? 'Saving workspace changes…'
-                : announcement}
-          </p>
         </>
       )}
       {activeRemoval && (

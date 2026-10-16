@@ -328,11 +328,8 @@ describe('App', () => {
       });
       await request.promise;
     });
-    expect(
-      screen.getByText(
-        'Folder found. Access to its contents has not been checked.',
-      ),
-    ).toBeVisible();
+    expect(screen.getByText('Available')).toBeVisible();
+    expect(screen.getByText('Contents have not been checked.')).toBeVisible();
     expect(add).toHaveFocus();
     expect(checkWorkspace).toHaveBeenCalledExactlyOnceWith('1');
   });

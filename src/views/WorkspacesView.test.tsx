@@ -90,6 +90,101 @@ afterEach(() => {
 });
 
 describe('Workspaces view', () => {
+  it('announces availability in its row without a redundant generic success message', async () => {
+    vi.mocked(api.listWorkspaces).mockResolvedValue(listing([first]));
+    vi.mocked(api.checkWorkspace).mockResolvedValue({
+      id: '1',
+      availability: { state: 'present', reason: null, checkedAt: 1 },
+    });
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: action('Check availability for'),
+      }),
+    );
+    const available = await screen.findByText('Available');
+    expect(available.closest('[aria-live]')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
+    expect(available.closest('[aria-live]')).toHaveAttribute(
+      'aria-atomic',
+      'true',
+    );
+    expect(screen.getByText('Contents have not been checked.')).toBeVisible();
+    expect(
+      screen.queryByText('Folder availability checked.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('presents a missing root as a warning rather than a successful availability result', async () => {
+    vi.mocked(api.listWorkspaces).mockResolvedValue(listing([first]));
+    vi.mocked(api.checkWorkspace).mockResolvedValue({
+      id: '1',
+      availability: { state: 'missing', reason: null, checkedAt: 1 },
+    });
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: action('Check availability for'),
+      }),
+    );
+    const warning = await screen.findByText('Folder unavailable');
+    expect(warning.closest('[aria-live]')).toHaveTextContent(
+      'Folder not found. Reconnect the disk or check the saved location.',
+    );
+    expect(screen.queryByText('Available')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(
+      screen.getByRole('checkbox', { name: action('Enabled for') }),
+    ).toBeChecked();
+  });
+
+  it('keeps reload recovery inside the persistent error feedback', async () => {
+    vi.mocked(api.setWorkspaceEnabled).mockRejectedValue(
+      new Error('lost response'),
+    );
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([first]))
+      .mockRejectedValue(new Error('offline'));
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: action('Enabled for') }),
+    );
+    const error = screen.getByRole('alert');
+    expect(within(error).getByText('Workspace needs attention')).toBeVisible();
+    expect(error).toHaveTextContent('Reload workspaces before trying again.');
+    expect(
+      within(error).getByRole('button', { name: 'Reload workspaces' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('checkbox', { name: action('Enabled for') }),
+    ).toBeChecked();
+  });
+
+  it('confirms the committed enabled choice with an icon and specific visible text', async () => {
+    vi.mocked(api.listWorkspaces)
+      .mockResolvedValueOnce(listing([first]))
+      .mockResolvedValue(listing([{ ...first, enabled: false }]));
+    vi.mocked(api.setWorkspaceEnabled).mockResolvedValue({
+      ...first,
+      enabled: false,
+    });
+    render(<Harness />);
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: action('Enabled for') }),
+    );
+    const feedback = screen.getByRole('status');
+    expect(feedback).toHaveTextContent('Workspace disabled.');
+    expect(feedback.querySelector('svg')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(
+      screen.getByRole('checkbox', { name: action('Enabled for') }),
+    ).not.toBeChecked();
+  });
+
   it('distinguishes loading, failed loading, retry, and configured empty', async () => {
     const load = deferred<api.WorkspaceListing>();
     vi.mocked(api.listWorkspaces)
@@ -147,11 +242,8 @@ describe('Workspaces view', () => {
       });
       await check.promise;
     });
-    expect(
-      screen.getByText(
-        'Folder found. Access to its contents has not been checked.',
-      ),
-    ).toBeVisible();
+    expect(screen.getByText('Available')).toBeVisible();
+    expect(screen.getByText('Contents have not been checked.')).toBeVisible();
     expect(api.setWorkspaceEnabled).not.toHaveBeenCalled();
   });
 
@@ -232,15 +324,13 @@ describe('Workspaces view', () => {
       name: action('Enabled for'),
     });
     await userEvent.click(enabled);
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Workspace changes saved.',
-    );
+    expect(screen.getByRole('status')).toHaveTextContent('Workspace disabled.');
     await userEvent.click(enabled);
     expect(screen.getByRole('alert')).toHaveTextContent(
       "Couldn't save workspace changes. Try again.",
     );
     expect(screen.getByRole('status')).not.toHaveTextContent(
-      'Workspace changes saved.',
+      'Workspace disabled.',
     );
     expect(enabled).not.toBeChecked();
   });

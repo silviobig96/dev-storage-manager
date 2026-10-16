@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
+import { FeedbackMessage } from '../../components/ui/FeedbackMessage';
 import type { WorkspaceRecord } from '../../lib/workspaces';
 export function RemoveWorkspaceDialog({
   workspace,
@@ -53,9 +54,9 @@ export function RemoveWorkspaceDialog({
         <p>Files on disk will not be deleted.</p>
       </div>
       {error && (
-        <p className="workspace-error" role="alert">
+        <FeedbackMessage tone="error" title="Removal needs attention">
           {error.message}
-        </p>
+        </FeedbackMessage>
       )}
       <div className="workspace-actions">
         <Button ref={cancel} disabled={busy} onClick={onCancel}>

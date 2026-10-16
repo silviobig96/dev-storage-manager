@@ -11,6 +11,7 @@ export type AppIconName =
   | 'info'
   | 'check'
   | 'warning'
+  | 'error'
   | 'lock';
 
 const symbols: Record<AppIconName, ReactNode> = {
@@ -65,6 +66,12 @@ const symbols: Record<AppIconName, ReactNode> = {
     <>
       <path d="m9 2 7 13H2L9 2Z" />
       <path d="M9 7v3m0 2v.2" />
+    </>
+  ),
+  error: (
+    <>
+      <circle cx="9" cy="9" r="7" />
+      <path d="m6.5 6.5 5 5m0-5-5 5" />
     </>
   ),
   lock: (

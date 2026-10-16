@@ -5,6 +5,7 @@ import { WorkspacesView } from './views/WorkspacesView';
 import { WorkspaceSetup } from './features/workspaces/WorkspaceSetup';
 import { useWorkspaces } from './features/workspaces/useWorkspaces';
 import { Button } from './components/ui/Button';
+import type { FeedbackNotice } from './components/ui/FeedbackMessage';
 import { getAppHealth, type AppHealth } from './lib/desktop';
 
 export type HealthState =
@@ -19,7 +20,7 @@ function App() {
   const pendingFocus = useRef<'heading' | { row: string } | null>(null);
   const navigationIntent = useRef(0);
   const [navigationGeneration, setNavigationGeneration] = useState(0);
-  const [announcement, setAnnouncement] = useState('');
+  const [announcement, setAnnouncement] = useState<FeedbackNotice | null>(null);
   const [healthState, setHealthState] = useState<HealthState>({
     status: 'loading',
   });
@@ -61,7 +62,7 @@ function App() {
     }
     pendingFocus.current = 'heading';
     setCurrentView(view);
-    setAnnouncement('');
+    setAnnouncement(null);
   }
 
   async function addFromSetup() {
@@ -80,11 +81,13 @@ function App() {
             ? result.existingId
             : result.workspace.id,
       };
-      setAnnouncement(
-        result.status === 'duplicate'
-          ? 'This folder is already configured.'
-          : 'Workspace added. No files were scanned.',
-      );
+      setAnnouncement({
+        tone: result.status === 'duplicate' ? 'info' : 'success',
+        message:
+          result.status === 'duplicate'
+            ? 'This folder is already configured.'
+            : 'Workspace added. No files were scanned.',
+      });
       setCurrentView('workspaces');
     } catch {
       if (intent === navigationIntent.current) invoker?.focus();
@@ -127,7 +130,7 @@ function App() {
         <WorkspacesView
           workspaces={workspaces}
           headingRef={headingRef}
-          initialAnnouncement={announcement}
+          initialFeedback={announcement}
         />
       )}
     </AppShell>

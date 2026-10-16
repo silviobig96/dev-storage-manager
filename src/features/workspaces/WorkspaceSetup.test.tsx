@@ -43,6 +43,9 @@ describe('optional workspace setup', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       "Couldn't save workspace changes. Try again.",
     );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Setup needs attention',
+    );
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled();
   });
   it('blocks duplicate choices while adding and catches rejected Add', async () => {

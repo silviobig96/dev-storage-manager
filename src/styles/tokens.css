@@ -17,6 +17,18 @@
   --status-review: #875600;
   --status-protected: #535e78;
   --status-error: #b53232;
+  --feedback-info: #215ca8;
+  --feedback-info-surface: #f0f5fc;
+  --feedback-info-border: #cbdcf3;
+  --feedback-success: #27623d;
+  --feedback-success-surface: #f0f7f2;
+  --feedback-success-border: #c7dfce;
+  --feedback-warning: #805300;
+  --feedback-warning-surface: #fff8eb;
+  --feedback-warning-border: #ead7b0;
+  --feedback-error: #b53232;
+  --feedback-error-surface: #fdf2f2;
+  --feedback-error-border: #edcccc;
   --shadow-elevated: 0 4px 16px rgb(0 0 0 / 12%);
   --space-1: 2px;
   --space-2: 4px;
@@ -49,6 +61,18 @@
     --status-review: #e4be76;
     --status-protected: #b5c1dc;
     --status-error: #f1a0a0;
+    --feedback-info: #9cc5ff;
+    --feedback-info-surface: #29323f;
+    --feedback-info-border: #425975;
+    --feedback-success: #91d3aa;
+    --feedback-success-surface: #26332c;
+    --feedback-success-border: #3d5948;
+    --feedback-warning: #e4be76;
+    --feedback-warning-surface: #373126;
+    --feedback-warning-border: #64543a;
+    --feedback-error: #f1a0a0;
+    --feedback-error-surface: #382a2c;
+    --feedback-error-border: #694347;
     --shadow-elevated: 0 4px 16px rgb(0 0 0 / 28%);
   }
 }

@@ -46,13 +46,16 @@
   margin: 0;
   accent-color: var(--accent);
 }
-.workspace-error {
-  color: var(--status-error);
-  overflow-wrap: anywhere;
+.workspace-availability,
+.workspace-overlap {
+  margin-block-start: var(--space-4);
 }
-.workspace-announcement {
-  color: var(--text-secondary);
-  font-size: 12px;
+.workspace-feedback-error,
+.workspace-announcement:not(:empty) {
+  margin-block-end: var(--space-6);
+}
+.workspace-setup .feedback-message--notice {
+  margin-block-start: var(--space-5);
 }
 .workspace-remove-dialog {
   max-inline-size: min(48ch, calc(100vw - 2 * var(--space-8)));

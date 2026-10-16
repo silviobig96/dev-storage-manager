@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Section } from '../../components/content/Section';
 import { Button } from '../../components/ui/Button';
+import { FeedbackMessage } from '../../components/ui/FeedbackMessage';
 import '../../views/WorkspacesView.css';
 
 export function WorkspaceSetup({
@@ -68,9 +69,9 @@ export function WorkspaceSetup({
           </Button>
         </div>
         {error && (
-          <p role="alert" className="workspace-error">
+          <FeedbackMessage tone="error" title="Setup needs attention">
             {error.message}
-          </p>
+          </FeedbackMessage>
         )}
       </Section>
     </div>
