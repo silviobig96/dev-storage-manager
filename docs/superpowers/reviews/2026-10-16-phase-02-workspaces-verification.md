@@ -47,6 +47,7 @@ the focused `npm run test:run -- src/lib/workspaces.test.ts` then passed 1 file,
 This was a formatting correction, not a behavioral regression or TDD RED. The
 unchanged product implementation remains covered by the consolidated 105/48
 frontend/Rust results above; no broad test rerun was needed for test whitespace.
+The controller's final full formatting and diff checks at `765631d` also exited 0.
 
 ## Scope and boundary audit
 
@@ -210,6 +211,16 @@ focus to its Remove invoker. A complete focus-trap cycle was not established.
 These observations supplement jsdom tests, whose test-only dialog polyfill
 cannot prove browser top-layer or native picker behavior.
 
+Additional browser checks at 1100 × 720 used synthetic IPC after `765631d`:
+light-mode list failure displayed “Couldn't load workspaces.” and Retry; a
+failed Retry retained that error without false success. Dark-mode loading
+displayed “Loading workspaces…” without premature mutation controls. In light
+mode, Remove opened the HTML dialog with Cancel focused and both reassurance
+sentences. A simulated save failure displayed “Couldn't save workspace changes.
+Try again.” and retained the dialog; Cancel retained both rows and restored the
+Remove invoker's focus. These browser states do not prove native SQLite failure
+or native picker behavior; captures remain outside Git.
+
 ## Native and remaining acceptance checks
 
 The controller launched `npm run tauri dev` from the normal checkout. It compiled
@@ -236,6 +247,18 @@ Automated tests cover loading, empty, retryable error, failed SQLite writes with
 no false success, missing/denied/reappeared root mappings and health regression.
 They are not claims that every fault was reproduced in the running native app.
 The phase remains incomplete while these checks and human visual acceptance
-are outstanding. Authorized feature-branch publication is recorded separately
-by the controller after final gates and a clean checkout; it does not establish
-visual acceptance or authorize Phase 03, a PR, merge or release.
+are outstanding. Feature-branch publication does not establish visual acceptance
+or authorize Phase 03, a PR, merge or release.
+
+## Review and publication receipt
+
+Final independent whole-branch review at `765631d` reported no findings. The
+implementation was ready for its authorized feature-branch publication while
+native and human acceptance remained pending.
+
+The controller published `feat/phase-02-workspaces` with the normal
+`git push -u origin feat/phase-02-workspaces` command, exit 0. At that checkpoint,
+`git ls-remote --heads origin feat/phase-02-workspaces` exactly matched local HEAD:
+`765631dbebdbab8786adbdb8d7a54a9802363af9`. This historical receipt establishes
+publication of that commit only; subsequent documentation commits require their
+own push and remote verification. No force push, PR, merge or release occurred.
