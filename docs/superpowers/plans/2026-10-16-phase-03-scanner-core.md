@@ -104,26 +104,26 @@ Test-only `run_case(case: NativeCase) -> Result<NativeEvidence, QaFailure>` and
 five-second eval deadlines. `NativeCase` is inherited-acl or inherited-layout;
 future scanner-acl/scan-smoke/scan-ui extend the test enum, never application commands.
 
-- [ ] Add the `native_acceptance` Cargo test target with `harness=false`,
+- [x] Add the `native_acceptance` Cargo test target with `harness=false`,
       `required-features=["native-acceptance"]` and an empty opt-in feature.
       Set up the main-thread Wry event loop with temporary Database, seeded
       fixture roots and unchanged production-generated context/capability.
       Add the spec's reviewed dev-only edges without upgrading any version;
       resolve edges offline once, inspect lock, then use locked commands.
-- [ ] Write native cases first: allowed main health/list succeeds; ungranted
+- [x] Write native cases first: allowed main health/list succeeds; ungranted
       child, other window and external-origin actual main reject every existing
       command with handler-entry count 0 and identical fixture DB; wrong-parent
       main rejects its guard before service/picker. A deliberately invalid case
       must fail if its promise times out or transport is missing, not count as
       denied. Use the test-only ephemeral loopback server, not Internet origins.
-- [ ] Run `npm run build`, then
+- [x] Run `npm run build`, then
       `CARGO_TARGET_DIR=target/native-acceptance cargo test -p dev-storage-manager --test native_acceptance --features native-acceptance,tauri/custom-protocol --locked -- --case inherited-acl`.
       The explicit custom-protocol feature embeds frontendDist in the pinned
       context macro, avoiding the configured dev URL without a Vite server.
       Establish failure of missing cases/assertions, implement native evaluation
       result collection with `eval_with_callback`, then require actual Wry PASS.
       Do not label a missing test target/lock setup failure as behavioral RED.
-- [ ] Add geometry assertions: exact CSS sizes 760 × 520, 1100 × 720, 1600 × 900
+- [x] Add geometry assertions: exact CSS sizes 760 × 520, 1100 × 720, 1600 × 900
       in both native per-window themes; at most two titlebar corrections;
       view/section/separator content-width delta ≤1 px after measured padding,
       Overview empty centering ≤1 px,
@@ -133,7 +133,7 @@ future scanner-acl/scan-smoke/scan-ui extend the test enum, never application co
       events as proof of keyboard use. Run the same command with
       `--case inherited-layout`; separate automatic geometry from agent/human
       interaction and capture evidence. No global appearance changes required.
-- [ ] Verify separation using `cargo metadata --no-deps --format-version 1`,
+- [x] Verify separation using `cargo metadata --no-deps --format-version 1`,
       `cargo tree -e normal,build -p dev-storage-manager --locked`,
       `cargo build -p dev-storage-manager --bin dev-storage-manager --all-features --locked`
       and a normal `npm run tauri build -- --debug`. Audit manifest target kind,
@@ -147,6 +147,12 @@ layout/zoom separately; environmental failures remain open, not blocked design.
 If native ACL cannot be established, continue only isolated fixture work in
 Tasks 2–5, not real application/scanner integration. Preserve all P02 historical
 measurements, acceptance, and each check's original integration limit.
+
+Task 1 completed at `de0e55b`, independently reviewed. See the
+[actual native receipt](../reviews/2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
+Inherited ACL/zoom resolved by new evidence; layout remains conservatively open
+for empty Workspaces and the current UI checks at Task 11. No new scanner gate
+or Phase 03 human visual PASS follows from this checkpoint.
 
 ## Task 2: Define scan contracts and conservative read/protection policy
 
@@ -205,12 +211,18 @@ in existing application/Tauri tests; no permissive production fallback.
 
 **Interfaces:** Add `PlatformAdapter::scan_filesystem(&self) -> Box<dyn ScanFilesystem>`.
 `ScanFilesystem: Send + Sync` supplies
-`anchor_root(&self, root: &StoredWorkspace) -> Result<Box<dyn ScanDirectory>, ScanIoError>`.
+`anchor_root(&self, root: &StoredWorkspace, control: &dyn ScanIoControl) -> Result<Box<dyn ScanDirectory>, ScanIoError>`.
 `ScanDirectory: Send` provides `identity() -> ObjectIdentity`,
-`next_entry(&mut self) -> Result<Option<ScanEntry>, ScanIoError>`,
-`open_child(&mut self, entry: &ScanEntry) -> Result<Box<dyn ScanDirectory>, ScanIoError>`,
-`verify_link(&self, entry: &ScanEntry, child: &ObjectIdentity) -> Result<(), ScanIoError>`,
-and `finish(&mut self) -> Result<(), ScanIoError>` for directory-change observation.
+`next_entry(&mut self, control: &dyn ScanIoControl) -> Result<Option<ScanEntry>, ScanIoError>`,
+`open_child(&mut self, entry: &ScanEntry, control: &dyn ScanIoControl) -> Result<Box<dyn ScanDirectory>, ScanIoError>`,
+`verify_link(&self, entry: &ScanEntry, child: &ObjectIdentity, control: &dyn ScanIoControl) -> Result<(), ScanIoError>`,
+and `finish(&mut self, control: &dyn ScanIoControl) -> Result<(), ScanIoError>` for directory-change observation.
+The small core trait `ScanIoControl: Send + Sync` exposes only
+`checkpoint(&self) -> Result<(), StopReason>`. Task 5 ScanControl implements it;
+Task 3 fixtures use a controlled implementation. Every actual syscall checks
+before/after through this seam, not only between multi-syscall cursor methods.
+RAII close/closedir still run unconditionally after stop to avoid leaking handles.
+ScanIoError distinguishes a diagnostic from a cooperative Stopped(StopReason).
 `ScanEntry` contains native name, type, identity/mount/cloud facts and nullable
 logical/allocated metadata; no contents. ObjectIdentity is a fixed native key,
 volume UUID + file ID + birth time, separate from transport strings.
@@ -542,6 +554,8 @@ produces evidence indexed by tested commit/artifact and gate, not new product AP
       termination reason; do not extrapolate real-repository performance.
 - [ ] Run native exact-size/light-dark/zoom cases for both views and new controls,
       max window, full long paths, empty/partial/stopping/complete and dialog access.
+      Include the empty Workspaces state at all three exact sizes/appearances,
+      not only Overview empty and populated Workspaces from Task 1.
       Check keyboard, focus, reader announcements, contrast/reduced motion with
       explicit permission for any global change. Record native vs browser vs
       tests vs human; no screenshot pixel inference. Restore native test controls.

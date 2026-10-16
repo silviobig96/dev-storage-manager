@@ -526,15 +526,18 @@ merge. No PR, merge, release or Phase 03 implementation is performed here.
       acceptance in the [dated decision](../reviews/2026-10-16-phase-02-workspaces-verification.md#human-acceptance-decision--2026-10-16).
 - [ ] Resolve [P02-NATIVE-LAYOUT](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-layout)
       before accepting the next UI-modifying phase.
-- [ ] Resolve [P02-NATIVE-ZOOM](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
+- [x] Resolve [P02-NATIVE-ZOOM](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-zoom)
       before accepting the next UI-modifying phase.
-- [ ] Resolve [P02-NATIVE-ACL](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
+- [x] Resolve [P02-NATIVE-ACL](../reviews/2026-10-16-phase-02-workspaces-verification.md#p02-native-acl)
       before integrating the real Phase 03 scanner. Planning may advance in a
       separate task; no automatic PASS or deferral to cleanup is allowed.
 
-These native items remain OPEN — DEFERRED WITH HUMAN APPROVAL; original
-unperformed verification steps below stay unchecked. Their procedures and
-responsible follow-ups are recorded under those stable identifiers.
+New Phase 03 Task 1 evidence resolves inherited ACL and native zoom; see its
+[native receipt](../reviews/2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
+Layout stays OPEN pending empty Workspaces/current UI checks before acceptance.
+The original dated acceptance-closure observations below remain historical and
+are not retroactively marked executed. New scanner commands/new UI retain their
+own gates; this follow-up does not grant Phase 03 visual or release acceptance.
 
 - [x] Run the consolidated functional gates once after focused tests:
 

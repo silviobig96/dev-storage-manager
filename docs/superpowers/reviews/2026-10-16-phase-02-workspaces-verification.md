@@ -402,13 +402,18 @@ files; no product suites were rerun solely for updating evidence.
 
 ## Remaining acceptance checks
 
-All three checks below are **OPEN — DEFERRED WITH HUMAN APPROVAL**. None was
-executed, passed or removed by the acceptance decision. General human visual
-approval is now PASS and is not an additional open check.
+At the Phase 02 acceptance decision all three checks were **OPEN — DEFERRED WITH
+HUMAN APPROVAL**; that decision itself executed or passed none. The current
+statuses below additionally reference new Phase 03 native evidence, without
+relabeling any historical observation. General Phase 02 visual approval remains PASS.
 
 ### P02-NATIVE-LAYOUT
 
 - **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **New follow-up:** Phase 03 Task 1 measured the exact six size/appearance cases
+  in Overview and populated Workspaces. Empty Workspaces/current Phase 03 UI
+  remains to be exercised before acceptance; see the
+  [new native receipt](2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
 - **Exact scope / missing check:** Overview and Workspaces in native macOS
   light/dark at each exact CSS viewport: 760 × 520, 1100 × 720 and 1600 × 900.
   Verify structural/section/separator width, centered empty states and no shell
@@ -428,10 +433,15 @@ approval is now PASS and is not an additional open check.
 
 ### P02-NATIVE-ZOOM
 
-- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **Status:** RESOLVED by new Phase 03 Task 1 native evidence, 2026-10-16.
+- **New evidence:** Actual WK pageZoom 2.0/restored 1.0 in the exact-size matrix;
+  human confirmed the long-path action/keyboard/scroll/dialog check with
+  “esta perfecto” in the held 200% fixture. This is not new Phase 03 visual
+  approval; its added controls still need their own checks. See the
+  [native receipt](2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
 - **Exact scope / missing check:** Real 200% WKWebView page zoom, all long-path
   actions reachable and operable, scrolling, and dialog content/actions.
-- **Existing evidence:** Native long-path keyboard actions and modal cycles
+- **Historical evidence at Phase 02 acceptance:** Native long-path keyboard actions and modal cycles
   worked at ordinary zoom, including 760 × 640 CSS. Native page-zoom invocation
   with value 2 was denied by the intact production policy; no real 200% result
   exists. Browser results, CSS scaling and OS magnification are not substitutes.
@@ -445,11 +455,18 @@ approval is now PASS and is not an additional open check.
 
 ### P02-NATIVE-ACL
 
-- **Status:** OPEN — DEFERRED WITH HUMAN APPROVAL.
+- **Status:** RESOLVED for the seven existing commands by new Phase 03 Task 1
+  native evidence, 2026-10-16. New scanner commands retain a separate native
+  denial gate before real engine integration.
+- **New evidence:** Real child/other-window/external-main calls rejected all
+  seven before handler entry with unchanged fixture DB; wrong-parent calls
+  failed the guard; authorized-main controls passed, capabilities unchanged.
+  Missing bridge/timeout are distinct failures. See the
+  [native receipt](2026-10-16-phase-03-scanner-core-verification.md#checkpoint-1--native-acceptance-target).
 - **Exact scope / missing check:** In real WKWebView, reject unauthorized
   webview/window callers and remote origins for the seven registered commands,
   before handler/picker/database work, with production policy unchanged.
-- **Existing evidence:** Generated-context MockRuntime ACL/dispatch tests cover
+- **Historical evidence at Phase 02 acceptance:** Generated-context MockRuntime ACL/dispatch tests cover
   denied labels/origins, containing-window guards and unavailable generic APIs.
   They remain automated evidence, not native evidence. Actual main health works;
   native creation of a second webview was denied. Denial of its creation does
