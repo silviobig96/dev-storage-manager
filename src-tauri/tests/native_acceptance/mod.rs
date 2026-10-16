@@ -1,5 +1,6 @@
 mod acl;
 mod geometry;
+mod scan_smoke;
 mod scanner;
 
 use dev_storage_application::ApplicationService;
@@ -22,6 +23,7 @@ pub enum NativeCase {
     InheritedAcl,
     InheritedLayout,
     ScannerAcl,
+    ScanSmoke,
 }
 
 #[derive(Debug)]
@@ -87,8 +89,11 @@ pub fn main() {
         Some("inherited-acl") => NativeCase::InheritedAcl,
         Some("inherited-layout") => NativeCase::InheritedLayout,
         Some("scanner-acl") => NativeCase::ScannerAcl,
+        Some("scan-smoke") => NativeCase::ScanSmoke,
         _ => {
-            eprintln!("FAIL: expected --case inherited-acl|inherited-layout|scanner-acl");
+            eprintln!(
+                "FAIL: expected --case inherited-acl|inherited-layout|scanner-acl|scan-smoke"
+            );
             std::process::exit(2);
         }
     };
@@ -114,6 +119,9 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         Some(runner) => {
             ApplicationService::new_with_scan_runner(MacOsAdapter, database, runner.clone())
         }
+        None if matches!(case, NativeCase::ScanSmoke) => {
+            crate::native_runtime::application_service(database)
+        }
         None => ApplicationService::new(MacOsAdapter, database),
     });
     for number in 1..=12 {
@@ -125,6 +133,11 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         service
             .add_workspace(service.prepare_workspace(&root).map_err(transport)?, 100)
             .map_err(transport)?;
+        if number == 1 && matches!(case, NativeCase::ScanSmoke) {
+            std::fs::create_dir(root.join("nested")).map_err(transport)?;
+            std::fs::write(root.join("sentinel"), b"unchanged").map_err(transport)?;
+            std::fs::write(root.join("nested/data"), b"abcde").map_err(transport)?;
+        }
     }
     let entries = Arc::new(Mutex::new(BTreeMap::<String, usize>::new()));
     let counted = entries.clone();
@@ -161,6 +174,7 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         })
         .build(crate::application_context())
         .map_err(transport)?;
+    let exit_service = service.clone();
     let fixture = Arc::new(Fixture {
         app: app.handle().clone(),
         service,
@@ -172,34 +186,48 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
     let result = Arc::new(Mutex::new(None));
     let collected = result.clone();
     let mut pending = Some(fixture);
-    let exit_code = app.run_return(move |app, event| match event {
-        tauri::RunEvent::Ready => {
-            let fixture = pending.take().expect("one Ready event");
-            let app = app.clone();
-            let collected = collected.clone();
-            tauri::async_runtime::spawn(async move {
-                let outcome = match case {
-                    NativeCase::InheritedAcl => acl::run(&fixture, false).await,
-                    NativeCase::ScannerAcl => acl::run(&fixture, true).await,
-                    NativeCase::InheritedLayout => geometry::run(&fixture).await,
-                };
-                let code = if outcome.is_ok() { 0 } else { 1 };
-                *collected.lock().unwrap() = Some(outcome);
-                app.exit(code);
-            });
+    let exit_code = app.run_return(move |app, event| {
+        if matches!(case, NativeCase::ScanSmoke) {
+            crate::native_runtime::on_run_event(app, &event);
         }
-        // Closing/replacing main is part of the wrong-parent case, not test completion.
-        tauri::RunEvent::ExitRequested {
-            code: None, api, ..
-        } => api.prevent_exit(),
-        _ => {}
+        match event {
+            tauri::RunEvent::Ready => {
+                let fixture = pending.take().expect("one Ready event");
+                let app = app.clone();
+                let collected = collected.clone();
+                tauri::async_runtime::spawn(async move {
+                    let outcome = match case {
+                        NativeCase::InheritedAcl => acl::run(&fixture, false).await,
+                        NativeCase::ScannerAcl => acl::run(&fixture, true).await,
+                        NativeCase::InheritedLayout => geometry::run(&fixture).await,
+                        NativeCase::ScanSmoke => scan_smoke::run(&fixture).await,
+                    };
+                    let code = if outcome.is_ok() { 0 } else { 1 };
+                    *collected.lock().unwrap() = Some(outcome);
+                    app.exit(code);
+                });
+            }
+            // Closing/replacing main is part of the wrong-parent case, not test completion.
+            tauri::RunEvent::ExitRequested {
+                code: None, api, ..
+            } if !matches!(case, NativeCase::ScanSmoke) => api.prevent_exit(),
+            _ => {}
+        }
     });
     let outcome = result.lock().unwrap().take().unwrap_or_else(|| {
         Err(QaFailure::Transport(format!(
             "event loop exited ({exit_code}) before collecting evidence"
         )))
     });
-    outcome
+    let evidence = outcome?;
+    if matches!(case, NativeCase::ScanSmoke) {
+        require(
+            matches!(exit_service.current_scan(), Err(error)
+                if error.code == dev_storage_core::scanner::ScanErrorCode::ApplicationUnavailable),
+            "ExitRequested must stop scan publication",
+        )?;
+    }
+    Ok(evidence)
 }
 
 async fn eval(webview: &Webview<Wry>, script: impl Into<String>) -> QaResult<Value> {

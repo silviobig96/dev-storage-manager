@@ -9,6 +9,8 @@ use std::{
     time::Duration,
 };
 
+mod scan_native_integration;
+
 fn wait_scan(service: &ApplicationService<Adapter>) -> ScanSnapshot {
     let state = service.scans.shared.state.lock().unwrap();
     let (state, timed) = service

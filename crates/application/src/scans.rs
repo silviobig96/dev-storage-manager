@@ -504,6 +504,30 @@ pub trait ScanRunner: Send + Sync {
     ) -> ScanReport;
 }
 
+/// Metadata-only engine integration. Session authority and activity ownership
+/// remain in the application coordinator, not in this runner.
+pub struct MetadataScanRunner {
+    filesystem: Box<dyn ScanFilesystem>,
+}
+
+impl MetadataScanRunner {
+    pub fn new(filesystem: Box<dyn ScanFilesystem>) -> Self {
+        Self { filesystem }
+    }
+}
+
+impl ScanRunner for MetadataScanRunner {
+    fn run(
+        &self,
+        roots: Vec<StoredWorkspace>,
+        mode: ScanMode,
+        control: &ScanControl,
+        publish: &mut dyn FnMut(ScanProgress),
+    ) -> ScanReport {
+        scan(roots, mode, self.filesystem.as_ref(), control, publish)
+    }
+}
+
 impl<A: PlatformAdapter> ApplicationService<A> {
     /// Rust lifecycle hook for application exit, never an IPC command. The owned
     /// worker keeps its reservation until actual cleanup; this does not join it.

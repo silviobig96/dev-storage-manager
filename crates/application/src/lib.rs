@@ -8,7 +8,7 @@ mod activity;
 mod scans;
 mod workspaces;
 pub use activity::{ActivityGate, WorkspaceChangeGuard};
-pub use scans::ScanRunner;
+pub use scans::{MetadataScanRunner, ScanRunner};
 
 pub struct ApplicationService<A> {
     adapter: A,

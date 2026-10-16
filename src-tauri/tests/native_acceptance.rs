@@ -4,6 +4,8 @@
 #![allow(dead_code, unused_imports)]
 #[path = "../src/commands.rs"]
 mod commands;
+#[path = "../src/native_runtime.rs"]
+mod native_runtime;
 #[path = "../src/registration.rs"]
 mod registration;
 #[path = "../src/scans.rs"]
