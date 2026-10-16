@@ -9,7 +9,7 @@ use tauri::{
     LogicalPosition, LogicalSize, WebviewBuilder, WebviewUrl, WebviewWindowBuilder, WindowBuilder,
 };
 
-const COMMANDS: [&str; 7] = [
+const COMMANDS: [&str; 11] = [
     "get_app_health",
     "list_workspaces",
     "select_and_add_workspace",
@@ -17,11 +17,20 @@ const COMMANDS: [&str; 7] = [
     "set_workspace_enabled",
     "check_workspace",
     "skip_workspace_setup",
+    "start_workspace_scan",
+    "get_workspace_scan",
+    "get_workspace_scan_session",
+    "cancel_workspace_scan",
 ];
 
 // Regression caught: broadening a capability to a child/window/remote caller,
 // or removing the actual-parent guard, would reach a service/picker or mutate DB.
-pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
+pub(super) async fn run(fixture: &Fixture, scanner: bool) -> QaResult<Value> {
+    let commands = if scanner {
+        &COMMANDS[..]
+    } else {
+        &COMMANDS[..7]
+    };
     let main = fixture.main()?;
     ready(&main).await?;
     for command in ["get_app_health", "list_workspaces"] {
@@ -69,6 +78,9 @@ pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
             == 11,
         "real fixture mutation positive control",
     )?;
+    if scanner {
+        super::scanner::positive(fixture, &main).await?;
+    }
     // Invalid transport and a never-settled promise must fail, never look denied.
     require(
         matches!(
@@ -100,13 +112,13 @@ pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
         )
         .map_err(transport)?;
     ready(&child).await?;
-    denied(fixture, &child, "child", false).await?;
+    denied(fixture, &child, "child", false, commands).await?;
     child.close().map_err(transport)?;
     let other = WebviewWindowBuilder::new(&fixture.app, "other", WebviewUrl::default())
         .build()
         .map_err(transport)?;
     ready(other.as_ref()).await?;
-    denied(fixture, other.as_ref(), "other", false).await?;
+    denied(fixture, other.as_ref(), "other", false, commands).await?;
     other.close().map_err(transport)?;
 
     {
@@ -124,7 +136,7 @@ pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
             main.url().map_err(transport)?.as_str() == server.url,
             "actual main must navigate to external loopback origin",
         )?;
-        denied(fixture, &main, "external", false).await?;
+        denied(fixture, &main, "external", false, commands).await?;
     } // Stop and join server before the next isolated caller case.
     main.window().close().map_err(transport)?;
     main.state::<LoadedPages>().0.lock().unwrap().remove("main");
@@ -146,21 +158,75 @@ pub(super) async fn run(fixture: &Fixture) -> QaResult<Value> {
         )
         .map_err(transport)?;
     ready(&wrong).await?;
-    denied(fixture, &wrong, "wrong-parent", true).await?;
+    denied(fixture, &wrong, "wrong-parent", true, commands).await?;
     wrong_window.close().map_err(transport)?;
+    // Explicit opt-in UI control follows the mandatory matrix. When requested,
+    // any timeout or error fails the run; an unexercised picker is never PASS.
+    let mut picker_status = json!("not_exercised");
+    if scanner && std::env::args().any(|arg| arg == "--picker-cancel") {
+        tokio::time::timeout(DEADLINE, async {
+            while fixture.app.get_webview("main").is_some() {
+                tokio::time::sleep(Duration::from_millis(25)).await;
+            }
+        })
+        .await
+        .map_err(|_| QaFailure::Timeout("closing wrong parent before selector control"))?;
+        fixture
+            .app
+            .state::<LoadedPages>()
+            .0
+            .lock()
+            .unwrap()
+            .remove("main");
+        let restored = WebviewWindowBuilder::new(&fixture.app, "main", WebviewUrl::default())
+            .build()
+            .map_err(transport)?;
+        ready(restored.as_ref()).await?;
+        super::scanner::picker_positive(fixture, restored.as_ref()).await?;
+        picker_status = json!("cancelled");
+    }
     Ok(
-        json!({"case":"inherited-acl", "engine":"actual Wry", "allowedHealthAndList":2, "fixtureMutations":5,
-        "deniedBeforeHandler":{"child":7,"otherWindow":7,"externalMain":7}, "wrongParentGuard":7,
-        "missingBridgeIsFailure":true,"unsettledPromiseIsFailure":true,"unchangedFixtureDatabase":true,"scanner":"not implemented"}),
+        json!({"case":if scanner {"scanner-acl"} else {"inherited-acl"}, "engine":"actual Wry", "allowedHealthAndList":2, "fixtureMutations":5,
+        "commands":commands,"deniedBeforeHandler":{"child":commands.len(),"otherWindow":commands.len(),"externalMain":commands.len()}, "wrongParentGuard":commands.len(),
+        "missingBridgeIsFailure":true,"unsettledPromiseIsFailure":true,"unchangedFixtureDatabase":true,
+        "nativePickerPositive":picker_status,"syntheticRunnerPositiveCalls":if scanner {1} else {0},"unauthorizedRunnerCalls":0,
+        "scanner":if scanner {"counted synthetic only; no metadata traversal"} else {"not wired"}}),
     )
 }
 
-async fn denied(fixture: &Fixture, caller: &Webview, case: &str, guard: bool) -> QaResult<()> {
+async fn denied(
+    fixture: &Fixture,
+    caller: &Webview,
+    case: &str,
+    guard: bool,
+    commands: &[&str],
+) -> QaResult<()> {
     let before = fixture.snapshot()?;
+    let before_scan = fixture.service.current_scan().map_err(transport)?;
+    let runner_calls = || {
+        fixture
+            .runner
+            .as_ref()
+            .map_or(0, |r| r.calls.load(Ordering::SeqCst))
+    };
+    let before_runner = runner_calls();
     let key = format!("{case}:{}:{}", caller.window().label(), caller.label());
     let initial = fixture.count(&key);
-    for command in COMMANDS {
-        let response = invoke(caller, command, json!({"id":"1","enabled":false}), case).await?;
+    for command in commands {
+        let session = before_scan
+            .session
+            .as_ref()
+            .map(|s| json!(s.session_id))
+            .unwrap_or(json!("s:p1-t1-g0:1"));
+        let response = invoke(
+            caller,
+            command,
+            json!({"id":"1","enabled":false,
+            "sessionId":session,"request":{"requestId":"11234567-89ab-cdef-0123-456789abcdef",
+            "expectedEpoch":before_scan.epoch,"workspaceIds":["1"],"mode":"quick"}}),
+            case,
+        )
+        .await?;
         require(
             response["status"] == "rejected",
             format!("{case} {command} did not reject: {response}"),
@@ -182,13 +248,21 @@ async fn denied(fixture: &Fixture, caller: &Webview, case: &str, guard: bool) ->
             fixture.snapshot()? == before,
             format!("{case} {command} changed fixture database"),
         )?;
+        require(
+            fixture.service.current_scan().map_err(transport)? == before_scan
+                && runner_calls() == before_runner,
+            format!("{case} {command} reached scanner"),
+        )?;
+        eprintln!("PASS caller={case} command={command} rejection={} handler_entries={} runner_delta=0 database=identical scan=identical",
+            if guard {"actual_parent_guard"} else {"acl_not_allowed"},fixture.count(&key)-initial);
     }
     require(
-        fixture.count(&key) - initial == if guard { 7 } else { 0 },
+        fixture.count(&key) - initial == if guard { commands.len() } else { 0 },
         format!("{case}: unexpected handler entries"),
     )?;
     eprintln!(
-        "PASS caller={case} commands=7 handler_entries={} database=identical",
+        "PASS caller={case} commands={} handler_entries={} runner_delta=0 database=identical scan=identical",
+        commands.len(),
         fixture.count(&key) - initial
     );
     Ok(())

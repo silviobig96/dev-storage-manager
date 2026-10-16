@@ -1,5 +1,6 @@
 mod commands;
 mod registration;
+mod scans;
 mod workspace_runtime;
 mod workspaces;
 

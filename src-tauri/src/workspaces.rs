@@ -93,25 +93,30 @@ async fn select_with_picker<A: PlatformAdapter + 'static>(
     clock: impl FnOnce() -> i64,
 ) -> Result<AddWorkspaceOutcome, WorkspaceFailure> {
     let selection = runtime.try_begin_selection()?;
+    let change = service.reserve_workspace_change()?;
     let (sender, receiver) = tokio::sync::oneshot::channel();
     picker.pick(Box::new(move |result| {
         // The callback owns the gate while the panel is open, even if its receiver is gone.
-        let _ = sender.send((result, selection));
+        let _ = sender.send((result, selection, change));
     }));
-    let (selected, selection) = receiver
+    let (selected, selection, change) = receiver
         .await
         .map_err(|_| failure(WorkspaceErrorCode::ApplicationUnavailable))?;
     let Some(selected) = selected? else {
         return Ok(AddWorkspaceOutcome::Cancelled);
     };
     let preparing = service.clone();
-    let root = runtime
-        .validate(move || preparing.prepare_workspace(&selected))
+    let (root, change) = runtime
+        .validate(move || {
+            // The uncancellable worker retains ownership after timeout or receiver drop.
+            let root = preparing.prepare_workspace(&selected)?;
+            Ok((root, change))
+        })
         .await?;
     // Validation cannot persist; only a timely success reaches this untimed commit.
     let now = clock();
     match selection
-        .commit(move || service.add_workspace(root, now))
+        .commit(move || service.commit_workspace_add(change, root, now))
         .await?
     {
         WorkspaceInsertOutcome::Added(workspace) => Ok(AddWorkspaceOutcome::Added {
@@ -233,7 +238,7 @@ pub async fn skip_workspace_setup<R: Runtime>(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use dev_storage_core::Platform;
     use dev_storage_persistence::Database;
@@ -341,6 +346,103 @@ mod tests {
         }
     }
 
+    // Catches missing application ownership during the panel and after receiver drop.
+    #[test]
+    fn scan_picker_reserves_application_until_callback() {
+        tauri::async_runtime::block_on(async {
+            let service = service(Adapter::default());
+            let runtime = WorkspaceRuntime::default();
+            let picker = FakePicker::default();
+            let mut pending =
+                Box::pin(select_with_picker(service.clone(), &runtime, &picker, || 1));
+            assert!(
+                std::future::poll_fn(|cx| std::task::Poll::Ready(
+                    pending.as_mut().poll(cx).is_pending()
+                ))
+                .await
+            );
+            assert_eq!(
+                service.reserve_workspace_change().err().unwrap().code,
+                WorkspaceErrorCode::OperationInProgress
+            );
+            drop(pending);
+            assert_eq!(
+                service.reserve_workspace_change().err().unwrap().code,
+                WorkspaceErrorCode::OperationInProgress
+            );
+            picker.complete(Ok(None));
+            assert!(service.reserve_workspace_change().is_ok());
+        });
+    }
+
+    // Catches releasing the application guard while uncancellable validation still runs.
+    #[test]
+    fn scan_picker_retains_application_after_validation_timeout() {
+        tauri::async_runtime::block_on(async {
+            let barrier = Arc::new(Barrier::default());
+            let _release = ReleaseOnDrop(barrier.clone());
+            let service = service(Adapter {
+                barrier: Some(barrier.clone()),
+                ..Default::default()
+            });
+            let runtime = WorkspaceRuntime::new(Duration::from_millis(10));
+            assert_eq!(
+                select_with_picker(service.clone(), &runtime, &Selected, || 1)
+                    .await
+                    .unwrap_err()
+                    .code,
+                WorkspaceErrorCode::ValidationTimeout
+            );
+            assert_eq!(
+                service.reserve_workspace_change().err().unwrap().code,
+                WorkspaceErrorCode::OperationInProgress
+            );
+            barrier.release();
+            tokio::time::timeout(Duration::from_secs(2), async {
+                loop {
+                    if let Ok(guard) = service.reserve_workspace_change() {
+                        drop(guard);
+                        break;
+                    }
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .unwrap();
+            assert!(service.list_workspaces().unwrap().workspaces.is_empty());
+        });
+    }
+
+    // Catches missing registration/status schema through the real generated context.
+    #[test]
+    fn scan_ipc_contract_status_is_registered() {
+        let service = Arc::new(ApplicationService::new(
+            MacOsAdapter,
+            Database::open_in_memory().unwrap(),
+        ));
+        let app = tauri::test::mock_builder()
+            .manage(service)
+            .invoke_handler(crate::application_handler())
+            .build(crate::application_context())
+            .unwrap();
+        let main = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .unwrap();
+        let status = invoke(
+            main.as_ref(),
+            "get_workspace_scan",
+            "tauri://localhost",
+            serde_json::json!({}),
+        )
+        .unwrap();
+        assert!(status["epoch"].as_str().is_some());
+        assert_eq!(status["session"], serde_json::Value::Null);
+        let error = invoke(main.as_ref(), "start_workspace_scan", "tauri://localhost", serde_json::json!({"request":{
+            "requestId":"01234567-89ab-cdef-0123-456789abcdef","expectedEpoch":status["epoch"],"workspaceIds":["1"],"mode":"quick"
+        }})).unwrap_err();
+        assert_eq!(error["code"], "application_unavailable");
+    }
+
     // Catches saving after cancel/error, failing to serialize picks, and early gate release on receiver drop.
     #[test]
     fn workspace_transport_cancel_and_busy() {
@@ -435,14 +537,6 @@ mod tests {
                 ..Default::default()
             });
             let runtime = WorkspaceRuntime::new(Duration::from_millis(10));
-            assert_eq!(
-                select_with_picker(service.clone(), &runtime, &Selected, || 1)
-                    .await
-                    .unwrap_err()
-                    .code,
-                WorkspaceErrorCode::ValidationTimeout
-            );
-            assert!(service.list_workspaces().unwrap().workspaces.is_empty());
             let root = ValidatedWorkspace {
                 selected_path: "/controlled/known".into(),
                 canonical_path: "/controlled/known".into(),
@@ -453,6 +547,18 @@ mod tests {
                 panic!("expected fixture insertion")
             };
             let before = service.list_workspaces().unwrap();
+            assert_eq!(
+                select_with_picker(service.clone(), &runtime, &Selected, || 1)
+                    .await
+                    .unwrap_err()
+                    .code,
+                WorkspaceErrorCode::ValidationTimeout
+            );
+            // The timed-out picker keeps its application lease while metadata is blocked.
+            assert_eq!(
+                service.reserve_workspace_change().err().unwrap().code,
+                WorkspaceErrorCode::OperationInProgress
+            );
             let checked = check_with_runtime(service.clone(), &runtime, saved.id, 3)
                 .await
                 .unwrap();
@@ -495,7 +601,7 @@ mod tests {
 
     // Catches app commands accidentally escaping generated production ACL, including OR window grants.
     #[test]
-    fn workspace_acl_denies_other_webviews_and_remote_origins() {
+    fn scan_workspace_acl_denies_other_webviews_and_remote_origins() {
         use tauri::{Manager, WebviewWindowBuilder};
         let service = Arc::new(ApplicationService::new(
             dev_storage_platform::MacOsAdapter,
@@ -547,6 +653,10 @@ mod tests {
             "set_workspace_enabled",
             "check_workspace",
             "skip_workspace_setup",
+            "start_workspace_scan",
+            "get_workspace_scan",
+            "get_workspace_scan_session",
+            "cancel_workspace_scan",
         ] {
             for (caller, url) in [
                 (&second, "tauri://localhost"),
@@ -593,7 +703,7 @@ mod tests {
 
     // Catches trusting the allowed webview label while ignoring its actual containing window.
     #[test]
-    fn workspace_acl_checks_actual_parent_window() {
+    fn scan_workspace_acl_checks_actual_parent_window() {
         let service = Arc::new(ApplicationService::new(
             MacOsAdapter,
             Database::open_in_memory().unwrap(),
@@ -624,12 +734,16 @@ mod tests {
             "set_workspace_enabled",
             "check_workspace",
             "skip_workspace_setup",
+            "start_workspace_scan",
+            "get_workspace_scan",
+            "get_workspace_scan_session",
+            "cancel_workspace_scan",
         ] {
             let error = invoke(
                 &caller,
                 command,
                 "tauri://localhost",
-                serde_json::json!({"id":"1","enabled":false,"window":"main"}),
+                serde_json::json!({"id":"1","enabled":false,"window":"main", "sessionId":"s:p1-t1-g0:1", "request":{"requestId":"01234567-89ab-cdef-0123-456789abcdef","expectedEpoch":"p1-t1-g0","workspaceIds":["1"],"mode":"quick"}}),
             )
             .unwrap_err();
             assert_eq!(
@@ -752,7 +866,7 @@ mod tests {
         );
     }
 
-    fn invoke(
+    pub(crate) fn invoke(
         webview: &tauri::Webview<tauri::test::MockRuntime>,
         command: &str,
         url: &str,

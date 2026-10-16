@@ -6,6 +6,8 @@
 mod commands;
 #[path = "../src/registration.rs"]
 mod registration;
+#[path = "../src/scans.rs"]
+mod scans;
 #[path = "../src/workspace_runtime.rs"]
 mod workspace_runtime;
 #[path = "../src/workspaces.rs"]

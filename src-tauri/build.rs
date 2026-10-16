@@ -8,6 +8,10 @@ fn main() {
             "set_workspace_enabled",
             "check_workspace",
             "skip_workspace_setup",
+            "start_workspace_scan",
+            "get_workspace_scan",
+            "get_workspace_scan_session",
+            "cancel_workspace_scan",
         ]),
     ))
     .expect("failed to build application permissions")

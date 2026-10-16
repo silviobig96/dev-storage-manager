@@ -11,6 +11,10 @@ pub(crate) fn application_handler<R: tauri::Runtime>(
         crate::workspaces::remove_workspace,
         crate::workspaces::set_workspace_enabled,
         crate::workspaces::check_workspace,
-        crate::workspaces::skip_workspace_setup
+        crate::workspaces::skip_workspace_setup,
+        crate::scans::start_workspace_scan,
+        crate::scans::get_workspace_scan,
+        crate::scans::get_workspace_scan_session,
+        crate::scans::cancel_workspace_scan
     ]
 }

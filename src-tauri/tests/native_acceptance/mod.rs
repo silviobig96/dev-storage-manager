@@ -1,5 +1,6 @@
 mod acl;
 mod geometry;
+mod scanner;
 
 use dev_storage_application::ApplicationService;
 use dev_storage_persistence::Database;
@@ -20,6 +21,7 @@ const MARKER: &str = "DSM_NATIVE_ACCEPTANCE_ONLY_V1";
 pub enum NativeCase {
     InheritedAcl,
     InheritedLayout,
+    ScannerAcl,
 }
 
 #[derive(Debug)]
@@ -48,6 +50,7 @@ struct Fixture {
     app: AppHandle,
     service: Arc<ApplicationService<MacOsAdapter>>,
     entries: Arc<Mutex<BTreeMap<String, usize>>>,
+    runner: Option<Arc<scanner::CountedRunner>>,
     database_path: PathBuf,
     _directory: tempfile::TempDir,
 }
@@ -83,8 +86,9 @@ pub fn main() {
     {
         Some("inherited-acl") => NativeCase::InheritedAcl,
         Some("inherited-layout") => NativeCase::InheritedLayout,
+        Some("scanner-acl") => NativeCase::ScannerAcl,
         _ => {
-            eprintln!("FAIL: expected --case inherited-acl|inherited-layout");
+            eprintln!("FAIL: expected --case inherited-acl|inherited-layout|scanner-acl");
             std::process::exit(2);
         }
     };
@@ -103,10 +107,15 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         .tempdir()
         .map_err(transport)?;
     let database_path = directory.path().join("fixture.sqlite");
-    let service = Arc::new(ApplicationService::new(
-        MacOsAdapter,
-        Database::open(&database_path).map_err(transport)?,
-    ));
+    let database = Database::open(&database_path).map_err(transport)?;
+    let runner =
+        matches!(case, NativeCase::ScannerAcl).then(|| Arc::new(scanner::CountedRunner::default()));
+    let service = Arc::new(match &runner {
+        Some(runner) => {
+            ApplicationService::new_with_scan_runner(MacOsAdapter, database, runner.clone())
+        }
+        None => ApplicationService::new(MacOsAdapter, database),
+    });
     for number in 1..=12 {
         let root = directory
             .path()
@@ -156,6 +165,7 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
         app: app.handle().clone(),
         service,
         entries,
+        runner,
         database_path,
         _directory: directory,
     });
@@ -169,7 +179,8 @@ pub fn run_case(case: NativeCase) -> QaResult<NativeEvidence> {
             let collected = collected.clone();
             tauri::async_runtime::spawn(async move {
                 let outcome = match case {
-                    NativeCase::InheritedAcl => acl::run(&fixture).await,
+                    NativeCase::InheritedAcl => acl::run(&fixture, false).await,
+                    NativeCase::ScannerAcl => acl::run(&fixture, true).await,
                     NativeCase::InheritedLayout => geometry::run(&fixture).await,
                 };
                 let code = if outcome.is_ok() { 0 } else { 1 };

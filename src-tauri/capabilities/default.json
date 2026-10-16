@@ -12,6 +12,10 @@
     "allow-remove-workspace",
     "allow-set-workspace-enabled",
     "allow-check-workspace",
-    "allow-skip-workspace-setup"
+    "allow-skip-workspace-setup",
+    "allow-start-workspace-scan",
+    "allow-get-workspace-scan",
+    "allow-get-workspace-scan-session",
+    "allow-cancel-workspace-scan"
   ]
 }
