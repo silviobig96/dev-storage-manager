@@ -522,27 +522,35 @@ ownership wiring in `src/App.tsx`. Preserve useWorkspaces and health guards.
 
 **Interfaces:** `startWorkspaceScan(request, invokeFn?)`, `getWorkspaceScan(invokeFn?)`,
 `getWorkspaceScanSession(sessionId, invokeFn?)`, `cancelWorkspaceScan(sessionId, invokeFn?)`.
-`useWorkspaceScan()` exposes `{status, snapshot, error, start(ids, mode), cancel(), reconnect()}`;
+`useWorkspaceScan()` exposes `{status, snapshot, error, pendingStart, start(ids, mode), cancel(), reconnect()}`;
 status includes reconciling/ready/unavailable with no invented backend terminal.
+pendingStart is a read-only IDs/mode descriptor for the original unresolved
+intent; request ID and epoch remain private to the controller. Existing explicit
+Start may replay only that identical intent. Reconnect never invokes Start.
 UUID-format requestId from crypto.randomUUID; authoritative epoch fetched before
 start. BigInt byte formatting lives in `src/lib/scanFormatting.ts` with tests.
 
-- [ ] Write exact transport spies for four commands/args, no paths or Number
+- [x] Write exact transport spies for four commands/args, no paths or Number
       coercion; parse 9,007,199,254,740,993 bytes unchanged, 2^30 displays 1 GiB,
       null displays Not available, zero displays 0 B. Preserve exact-byte label.
-- [ ] Hook tests use fake timers/deferred promises: one status query in flight,
+- [x] Hook tests use fake timers/deferred promises: one status query in flight,
       250 ms cadence only while a visible live session exists, pause on hide,
       reconcile once on show. Navigation/unmount does not send cancel/start;
       initial status fetch never causes filesystem work. No idle infinite polling.
-- [ ] Assert response loss keeps request ID for reconciliation/replay, does not
+- [x] Assert response loss keeps request ID for reconciliation/replay, does not
       start another request; later low-revision/old-epoch/session results ignored,
       StrictMode stale responses ignored, query failure leaves unknown status
       with Reconnect and never claims rollback/completion. Terminal stops queries.
-- [ ] Run `npm run test:run -- src/lib/scans.test.ts src/lib/scanFormatting.test.ts src/features/scans/useWorkspaceScan.test.tsx`
+- [x] Run `npm run test:run -- src/lib/scans.test.ts src/lib/scanFormatting.test.ts src/features/scans/useWorkspaceScan.test.tsx`
       RED/GREEN, implement narrow transport/controller. Commit
       `feat: manage scan session recovery in the frontend`.
 
 **Exit:** Presentation can observe state without inventing work or counts.
+
+Execution receipt: `c3ed5d5`, independently reviewed with no blocking findings.
+Forty focused tests, TypeScript and scoped lint/format checks passed. No visible
+scan controls yet. Minor lifetime growth of retired-epoch tracking is retained
+for final whole-branch review; UI copy alignment is carried into Task 10.
 
 ## Task 10: Present minimal scan intent and truthful results in existing views
 
@@ -586,7 +594,10 @@ and inherited layout/zoom are required at Task 11; Phase 02 approval is retained
 
 **Files:** Implementation verification record created in Task 1, this plan,
 architecture/roadmap current status; update P02 tracked checks only with actual
-new evidence, preserving every historical label. Fix only demonstrated defects.
+new evidence, preserving every historical label. Complete the existing isolated
+native target's `scan-ui` case and exact geometry/empty-state helpers under
+`src-tauri/tests/native_acceptance/`; no product diagnostics or new grants.
+Fix only demonstrated defects.
 
 **Interfaces:** Consumes the Task 1 `run_case` executable and Tasks 7–10 contracts,
 produces evidence indexed by tested commit/artifact and gate, not new product APIs.

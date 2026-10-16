@@ -19,12 +19,12 @@ workspace scan, release or Phase 04 feature is authorized.
 
 ## Checkpoints
 
-| Checkpoint                           | Tasks | Status                                |
-| ------------------------------------ | ----- | ------------------------------------- |
-| Isolated native verification         | 1     | Implemented; reviewed receipts below  |
-| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed    |
-| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–8 reviewed; 9–10 not executed |
-| Functional/native/human acceptance   | 11    | Not executed                          |
+| Checkpoint                           | Tasks | Status                               |
+| ------------------------------------ | ----- | ------------------------------------ |
+| Isolated native verification         | 1     | Implemented; reviewed receipts below |
+| Contracts, policy and fixture engine | 2–5   | Tasks 2–5 implemented and reviewed   |
+| Gated application/IPC/minimal UI     | 6–10  | Tasks 6–9 reviewed; 10 not executed  |
+| Functional/native/human acceptance   | 11    | Not executed                         |
 
 ## Inherited native obligations
 
@@ -576,3 +576,44 @@ Normal binary SHA256
 `00de68ffcca412a73fc93eb8a3c86912f8928769804b7c4cc47bc34546e2e080`;
 no normal-bundle launch/DMG/current UI QA is claimed here. Those remain Task 11.
 Human visual QA of Phase 03 remains awaiting review.
+
+## Task 9 — frontend transport and session recovery
+
+Source `c3ed5d5b17192f06be21b08ed167f4cbbc14903c`; independent task review
+approved substance and quality with two minor follow-ups: retired-epoch tracking
+grows per accepted session (final review must triage); transport recovery text
+should match “Reconnect to check progress” when integrated in Task 10. No blocking
+lifecycle defect found. Four typed IPC wrappers mirror current core DTOs and closed safe errors.
+BigInt formatting retains exact bytes beyond Number precision; null is Not
+available, known zero is 0 B, 1073741824 is 1 GiB. App mounts the controller above
+both views without changing health/workspace lifecycle, focus, shell or routes.
+No new scan UI, backend, dependency or persistence change.
+
+Visible live-worker sessions schedule one query at a time, 250 ms after the last
+response. Hidden/idle/unavailable/terminal states do not poll. Foregrounding queues
+one recovery read after any outstanding query/action. Generations/action versions,
+opaque epoch equality, session/request identity and BigInt revision checks reject
+stale responses. Unmount/navigation never cancel or start native work.
+
+Lost Start retains its original UUID, epoch and ordered IDs/mode. Reconnect only
+reads. A matching retained request reconciles it; no matching session does not
+falsely prove rejection. Explicit identical Start can replay that same payload;
+changed intent is blocked. Read-only pendingStart IDs/mode exposes only enough
+intent for presentation; UUID/epoch remain controller-owned. This state is in
+memory, not a new persisted request history. Unknown cancel outcome likewise
+keeps the last snapshot without inventing worker termination.
+
+TDD: absent modules/signature stubs failed 15 focused assertions, then 15 passed.
+App ownership assertion failed before mounting the hook, then passed. Additional
+pending-intent and hide/show-during-cancel regressions each failed before their
+fix; the latter now waits for both read and action responses before recovery.
+
+```sh
+npm run test:run -- src/lib/scans.test.ts src/lib/scanFormatting.test.ts src/features/scans/useWorkspaceScan.test.tsx src/App.test.tsx
+```
+
+Final focused run: 4 files, 40 tests passed (transport 2, formatting 5, hook 14,
+App 19). `npx tsc -b`, scoped ESLint/Prettier and `git diff --check` exited 0.
+Existing host npm user-config warning is not hidden by changing global settings.
+Full frontend/native/current UI gates remain Tasks 10–11; this is not a new native
+receipt or human visual approval.

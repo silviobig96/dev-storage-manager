@@ -548,6 +548,10 @@ Unmount stops queries, not work. Navigation never cancels, resets or starts.
 Reject stale session/epoch/request revisions after unmount or a newer session;
 transport loss means “Scan status is unavailable. Reconnect to check progress.”,
 not rollback, empty success or an automatic new start. Retry only queries state.
+The controller may expose read-only pendingStart IDs/mode so existing explicit
+Quick/Deep intent can safely replay an unresolved identical request without the
+view owning its UUID/epoch. A different scope/mode is rejected while unresolved;
+Reconnect remains read-only and never replays Start automatically.
 
 Proposed UI: Workspaces gets a compact “Workspace analysis” Section, explicit
 Quick scan / Deep scan text buttons for all enabled roots and a Cancel scan
