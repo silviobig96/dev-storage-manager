@@ -78,6 +78,6 @@ mod tests {
     fn command_adapter_returns_the_application_contract() {
         let service = ApplicationService::new(TestPlatform, Database::open_in_memory().unwrap());
         let payload = health_payload(&service).unwrap();
-        assert_eq!(payload.database_schema_version, 1);
+        assert_eq!(payload.database_schema_version, 2);
     }
 }

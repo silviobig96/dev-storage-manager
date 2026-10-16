@@ -610,6 +610,7 @@ dependencies = [
 name = "dev-storage-persistence"
 version = "0.1.0"
 dependencies = [
+ "dev-storage-core",
  "rusqlite",
  "rusqlite_migration",
  "tempfile",

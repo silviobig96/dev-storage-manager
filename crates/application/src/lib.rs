@@ -71,6 +71,6 @@ mod tests {
         assert_eq!(health.app_name, "dev-storage-manager");
         assert_eq!(health.app_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(health.platform, Platform::MacOs);
-        assert_eq!(health.database_schema_version, 1);
+        assert_eq!(health.database_schema_version, 2);
     }
 }
