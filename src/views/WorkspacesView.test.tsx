@@ -1,6 +1,13 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkspacesView } from './WorkspacesView';
 import { useWorkspaces } from '../features/workspaces/useWorkspaces';
 import * as api from '../lib/workspaces';
@@ -49,17 +56,37 @@ function Harness() {
 const action = (verb: string, row = first) =>
   `${verb} ${row.displayName} — ${row.selectedPath}`;
 
-// jsdom does not implement the native top layer or focus trap. This only lets
-// component tests exercise showModal/close and the app's own focus decisions.
+const originalDialogMethods = Object.getOwnPropertyDescriptors(
+  HTMLDialogElement.prototype,
+);
+let dialogFocusEvents: string[] = [];
+// Model close() restoring the element focused before showModal(). This does
+// not implement the native top layer, focus trap, or actual Escape delivery.
 beforeEach(() => {
   vi.resetAllMocks();
+  dialogFocusEvents = [];
+  const previousFocus = new WeakMap<HTMLDialogElement, HTMLElement | null>();
   HTMLDialogElement.prototype.showModal = function () {
+    previousFocus.set(this, document.activeElement as HTMLElement | null);
+    dialogFocusEvents.push('showModal');
     this.open = true;
   };
   HTMLDialogElement.prototype.close = function () {
+    dialogFocusEvents.push('close');
     this.open = false;
+    previousFocus.get(this)?.focus();
   };
   vi.mocked(api.listWorkspaces).mockResolvedValue(listing());
+});
+afterEach(() => {
+  // Unmount while the polyfill is installed, then restore the test environment.
+  cleanup();
+  for (const name of ['showModal', 'close']) {
+    const original = originalDialogMethods[name];
+    if (original)
+      Object.defineProperty(HTMLDialogElement.prototype, name, original);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, name);
+  }
 });
 
 describe('Workspaces view', () => {
@@ -363,6 +390,12 @@ describe('Workspaces view', () => {
       const row = screen.getByText(first.selectedPath).closest('li');
       row?.focus();
       expect(row).toHaveFocus();
+      row?.addEventListener('focus', () =>
+        dialogFocusEvents.push('previous focus'),
+      );
+      trigger.addEventListener('focus', () =>
+        dialogFocusEvents.push('trigger focus'),
+      );
       // WebKit mouse/AX activation need not focus the clicked button.
       // fireEvent preserves that pre-existing focus, unlike userEvent.click.
       fireEvent.click(trigger);
@@ -377,6 +410,12 @@ describe('Workspaces view', () => {
         fireEvent(dialog, new Event('cancel', { cancelable: true }));
       }
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(dialogFocusEvents).toEqual([
+        'showModal',
+        'close',
+        'previous focus',
+        'trigger focus',
+      ]);
       expect(trigger).toHaveFocus();
       expect(api.removeWorkspace).not.toHaveBeenCalled();
     },

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import type { WorkspaceRecord } from '../../lib/workspaces';
 export function RemoveWorkspaceDialog({
@@ -22,7 +22,9 @@ export function RemoveWorkspaceDialog({
   const cancel = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descriptionId = useId();
-  useEffect(() => {
+  // Close before the parent's layout focus restoration: native close() can
+  // restore the pre-dialog element, which may differ from the actual trigger.
+  useLayoutEffect(() => {
     const element = dialog.current;
     if (!element) return;
     element.showModal();
