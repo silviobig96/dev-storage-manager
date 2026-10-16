@@ -36,6 +36,10 @@ The React interface renders data, gathers workspace choices, explains consequenc
 
 Frontend domain types mirror serialized IPC contracts. They are not independent definitions of safety policy.
 
+The macOS interface uses a split-view application shell with a persistent primary sidebar, a view-oriented toolbar/header region, and a scrollable content pane. Shared React components express information architecture and interaction semantics. Semantic tokens and platform presentation layers express macOS visual conventions now and allow a future Windows presentation to adapt without forking product meaning or safety behavior.
+
+Phase 01.5 changes this presentation layer only. It does not add application use cases, persistence records, commands, providers, scanning, or cleanup behavior. The detailed visual contract is defined in [design-system.md](design-system.md).
+
 ### Tauri interface
 
 Tauri is the desktop shell and IPC transport. Commands expose narrow application use cases. Command payloads use explicit identifiers and typed fields rather than raw shell fragments.
@@ -141,3 +145,19 @@ Quick scans use bounded concurrency and known roots, avoid following unsafe syml
 Phase 01 implements a Tauri 2 shell and React/TypeScript foundation screen, Rust core/application/platform/persistence boundaries, a SQLite connection and migration foundation, and one read-only `get_app_health` contract that crosses those layers. Tests, formatting, linting, production frontend builds, local debug application builds, and macOS CI verify this foundation.
 
 The command registry contains only `get_app_health`. Phase 01 contains no provider, workspace behavior, filesystem scan, cleanup planning or execution, background monitor, notification, Windows implementation, privileged helper, or Full Disk Access flow. These exclusions are architectural boundaries, not merely absent UI controls.
+
+## Phase 01.5 presentation boundary
+
+Phase 01.5 implements the macOS application shell, semantic visual tokens, system-responsive appearances, accessible component primitives, and the redesigned foundation view. Functional verification passes; human visual QA remains pending, so the phase is not complete. The React reorganization continues to display the read-only `get_app_health` result without expanding the Tauri command registry or Rust application behavior.
+
+The shell reserves an information architecture for Overview, Workspaces, Projects, Categories, History, and Settings without pretending that later-phase routes or data exist. Any future-area label shown during Phase 01.5 is visibly noninteractive and identified as unavailable; mock storage measurements are not presented as analysis results.
+
+The design boundary is platform-adaptable rather than visually universal. Product concepts, accessibility semantics, and component responsibilities can remain shared, while chrome, spacing, materials, selection treatment, icon sizing, and control styling may differ behind a future Windows presentation layer. Phase 01.5 introduces no Windows implementation.
+
+## Workspace configuration boundary
+
+Workspaces are optional and remain a Phase 02 concern. The eventual model supports zero or more user-selected folders and a first-run choice between adding a workspace and skipping configuration. Global providers may operate without a workspace. Neither the UI nor application services may infer `~/Repositories` or any other default project root.
+
+## UI verification boundary
+
+Every phase that changes user-facing UI has two independent acceptance gates: functional QA and human visual QA. Automated checks and agent inspection can produce `FUNCTIONAL QA: PASS`; only human inspection of the running application can produce `VISUAL QA: PASS`. A UI phase remains incomplete while its visual result is awaiting human review.

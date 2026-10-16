@@ -31,6 +31,8 @@ These rules apply to every contributor and automated agent working in this repos
 - Apply YAGNI; do not build later-phase features early.
 - Use focused tests before full suites.
 - Make frequent, scoped commits at independently reviewable checkpoints.
+- Use conventional feature branches. Do not create or use a Git worktree unless the human explicitly requests one.
+- Push a feature branch only when the current task explicitly authorizes that push. Authorization does not permit pushing other branches, creating a PR, merging, or releasing.
 - Verify with current command output before claiming completion.
 - Never modify unrelated files.
 - Never commit secrets, credentials, local filesystem inventories, or personal data.
@@ -40,7 +42,7 @@ These rules apply to every contributor and automated agent working in this repos
 
 Do not implement destructive cleanup until the read-only scanner, safety model, and dashboard are stable and tested. Phase 01 is application foundation only: no providers, full-disk scanning, cleanup, monitor daemon, privileged helpers, Full Disk Access flow, or Windows implementation.
 
-DESIGN QUALITY
+## Design quality and UI verification
 
 This is a polished consumer/professional macOS application, not an
 administrative web dashboard.
@@ -57,6 +59,11 @@ For macOS:
 - Avoid excessive cards, pills, gradients, shadows and oversized copy.
 - Use transparency/material effects deliberately, not decoratively.
 - Controls should feel compact and appropriate for a desktop utility.
-- Every screen must be visually reviewed before a phase is considered complete.
+- Every phase that changes user-facing UI requires both a functional QA pass and
+  a human visual QA pass before the phase is complete.
+- Automated tests, builds, linting, and agent inspection may establish
+  `FUNCTIONAL QA: PASS`, but they cannot establish `VISUAL QA: PASS`.
+- Until the human has inspected the running application, report
+  `VISUAL QA: AWAITING HUMAN REVIEW` and do not describe the UI phase as complete.
 
 Future Windows UI must adapt to Windows conventions rather than mimic macOS.

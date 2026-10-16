@@ -10,9 +10,15 @@ Define the product, architecture, safety model, provider contract, contribution 
 
 **Complete.** The Tauri 2, React, TypeScript, Vite, and Rust application shell, core/application/platform/persistence boundaries, SQLite migration and repository foundation, read-only health contract, tests, linting, formatting, local debug build, and macOS GitHub Actions CI are in place. This phase implements no scanning, providers, workspace behavior, cleanup, monitor, notifications, Windows support, privileged helpers, or Full Disk Access flow.
 
+## Phase 01.5 — macOS Design Foundation
+
+**Implemented; human visual QA pending.** The macOS-first visual foundation provides a sidebar-based application shell, compact desktop hierarchy, semantic design tokens, system-driven light and dark appearances, reusable UI primitives, accessible interaction states, and a redesigned foundation screen. Functional verification passes, but the phase is not complete until human visual acceptance. This phase changes presentation only. It retains the existing read-only health query and does not add workspaces, scanning, providers, cleanup, monitoring, networking, telemetry, privileged helpers, Full Disk Access behavior, Windows behavior, or Swift styling helpers.
+
+Phase 01.5 requires both `FUNCTIONAL QA: PASS` and a human `VISUAL QA: PASS`. Automated verification alone cannot complete the phase.
+
 ## Phase 02 — Workspace System
 
-Implement user-selected workspace configuration for zero, one, or many paths, including validation, local persistence, and macOS selection UX. A workspace grants read-only analysis scope, not deletion authority.
+Implement optional user-selected workspace configuration for zero, one, or many paths, including validation, local persistence, and macOS selection UX. First-run configuration offers both **Add workspace** and **Skip for now**. Global providers may operate without a configured workspace. A workspace grants read-only analysis scope, not deletion authority, and the application never assumes `~/Repositories` or another default project root.
 
 ## Phase 03 — Read-only Scanner Core
 
@@ -56,3 +62,4 @@ Implement a Windows adapter and Windows-specific providers while reusing the Rus
 - No background monitor is introduced before manual scanning and local history are dependable.
 - No platform-specific behavior is placed in shared core or UI code when an adapter can contain it.
 - No phase adds automatic deletion, scheduled cleanup, default telemetry, or an assumed workspace path.
+- Every phase that modifies user-facing UI requires functional QA and human visual QA before completion.
